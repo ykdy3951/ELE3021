@@ -5,6 +5,9 @@
 int
 main(int argc, char *argv[])
 {
+	__asm__("int $128");
+	return 0;
+	/*
 	if (argc <= 1)
 		exit();
 
@@ -16,4 +19,5 @@ main(int argc, char *argv[])
 	ret_val = myfunction(buf);
 	printf(1, "Return value : 0x%x\n", ret_val);
 	exit();
+	*/
 };
