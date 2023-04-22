@@ -397,9 +397,10 @@ int main(int argc, char* argv[])
   case 'C':
     schedulerLock(2019044711);
     pid = fork();
-    sleep(1000);
+    sleep(10);
     printf(1, "sleep end %d\n", pid);
     if (pid != 0) {
+      printf(1, "waiting...\n");
       while(wait() != -1);
       printf(1, "[Test 12] parent end");
     }

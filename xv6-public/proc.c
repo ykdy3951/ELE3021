@@ -278,8 +278,10 @@ setPriority(int pid, int priority){
   struct proc *p;
   
   // 지정할 수 없는 priority면 setPriority를 끝낸다.
-  if (priority < 0 || priority > 3) return;
-
+  if (priority < 0 || priority > 3) {
+    cprintf("This priority %d is not allowed in MLFQ\n", priority);
+    return;
+  }
   acquire(&ptable.lock);
 
   // 해당 pid를 가진 process를 탐색후 변경
