@@ -185,37 +185,7 @@ int main(int argc, char* argv[])
     printf(1, "[Test 4] finished\n");
     break;
   case '5':
-    printf(1, "[Test 5] max level\n");
-    pid = fork_children3();
-    printf(1, "Process %d's max level is %d\n", getpid(), max_level);
-    if (pid != parent) // childs
-    {
-      for (i = 0; i < NUM_LOOP; i++)
-      {
-        int x = getLevel();
-        if (x < 0 || x > 2)
-        {
-          printf(1, "Wrong level: %d\n", x);
-          exit();
-        }
-        count[x]++;
-        if (x > max_level) {
-          // if (pid == 5) {
-          //   printf(1, "Process %d's max level is %d and Q level is %d\n", getpid(), max_level, x);
-          // }
-          yield();
-        }
-      }
-      printf(1, "Process %d\n", pid);
-      for (i = 0; i < MAX_LEVEL; i++)
-        printf(1, "Process %d , L%d: %d\n", pid, i, count[i]);
-
-    }
-    exit_children();
-    printf(1, "[Test 5] finished\n");
-    break;
-  case '6':
-    printf(1, "[Test 6] setPriority return value\n");
+    printf(1, "[Test 5] setPriority\n");
     child = fork();
 
     if (child == 0)
@@ -256,7 +226,18 @@ int main(int argc, char* argv[])
 
     exit_children();
     printf(1, "done\n");
-    printf(1, "[Test 6] finished\n");
+    printf(1, "[Test 5] finished\n");
+    break;
+  case '6':
+    printf(1, "[Test 6] sleep\n");
+    schedulerLock(PASSWORD);
+    int pid = fork();
+    if (pid != 0) {
+      exit();
+    } else {
+      sleep(100);
+    }
+    printf(1, "[Test 6] sleep end\n");
     break;
   case '7':
     printf(1, "[Test 7] schedulerLock & Unlock Test\n");
@@ -390,8 +371,9 @@ int main(int argc, char* argv[])
 
       schedulerLock(PASSWORD);
       printf(1, "Process %d in Q level %d\n", getpid(), getLevel());
-      // 아래부분 실행 안되어야함
       printf(1, "This procedure intends to scheduler Lock Error for duplication\n");
+
+      // duplicate Lock
       schedulerLock(PASSWORD);
       printf(1, "Process %d schedluer Unlock\n", getpid());
     }
@@ -405,24 +387,12 @@ int main(int argc, char* argv[])
         schedulerUnlock(PASSWORD);
         printf(1, "Process %d schedluer Unlock\n", getpid());
         schedulerUnlock(PASSWORD);
-        //아래 부분 실행 안되어야함.
         printf(1, "Process %d schedluer Unlock Again\n", getpid());
 
       }
     }
     exit_children();
     printf(1, "[Test 10] finished\n");
-    break;
-  case 'B':
-    printf(1, "[Test 11] sleep\n");
-    schedulerLock(PASSWORD);
-    int pid = fork();
-    if (pid != 0) {
-      exit();
-    } else {
-      sleep(100);
-    }
-    printf(1, "[Test 11] sleep end\n");
     break;
   case 'C':
     schedulerLock(2019044711);

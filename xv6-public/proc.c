@@ -185,6 +185,7 @@ mlfq_kill(struct proc *proc){
   if (idx == NPROC) return;
 
   // remove zombie process in MLFQ
+  // target 프로세스를 기준으로 왼쪽의 process를 한 칸씩 오른쪽으로 옮긴다.
   int nxt; 
   while(idx != target->front){
     nxt = idx - 1;
@@ -195,8 +196,7 @@ mlfq_kill(struct proc *proc){
     idx=nxt;
   }
 
-  // target zombie process를 mlfq내에서 지우고
-  // circular queue를 올바르게 고진다.
+  // front를 한 칸 옮기고 원래 front였던 자리는 0으로 초기화 한다.
   target->data[target->front] = 0;
   target->front = (target->front + 1) % NPROC;
   --target->size;
@@ -209,6 +209,7 @@ schedulerLock(int password){
   acquire(&ptable.lock);
   // MLFQ has already locked process
   if (MLFQ.is_locked == 1) {
+    cprintf("Duplicate Lock\n");
     release(&ptable.lock);
     kill(myproc()->pid);
     return;
@@ -237,8 +238,8 @@ schedulerUnlock(int password){
 
   // MLFQ has already locked process
   if(MLFQ.is_locked == 0) {
+    cprintf("Duplicate Unlock\n");
     release(&ptable.lock);
-    kill(myproc()->pid);
     return;
   }
 
@@ -759,8 +760,11 @@ scheduler(void)
       // process가 정상적으로 끝났으면 time quantum을 상승시킨다.
       if (p->state == RUNNABLE){        
         p->time_quantum++;
+        MLFQ.global_ticks++;
       }
-      MLFQ.global_ticks++;
+      else if (p->is_locked == 1){
+        MLFQ.global_ticks++;
+      }
       // whether current process is locked or not and ticks is 100 then run priority_boosting.
       if(MLFQ.global_ticks >= 100){
         int flag = 0;
