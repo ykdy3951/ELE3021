@@ -764,9 +764,10 @@ scheduler(void)
         p->time_quantum++;
         MLFQ.global_ticks++;
       }
-      else if (p->is_locked == 1){
+      else if(p->is_locked == 1){
         MLFQ.global_ticks++;
       }
+      
       // whether current process is locked or not and ticks is 100 then run priority_boosting.
       if(MLFQ.global_ticks >= 100){
         int flag = 0;

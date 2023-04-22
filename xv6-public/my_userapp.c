@@ -394,7 +394,22 @@ int main(int argc, char* argv[])
     exit_children();
     printf(1, "[Test 10] finished\n");
     break;
+  case 'B':
+    printf(1, "Lock\n");
+    schedulerLock(2019044711);
+    pid = fork();
+    sleep(1000);
+    printf(1, "sleep end %d\n", pid);
+    if (pid != 0) {
+      printf(1, "waiting...\n");
+      while(wait() != -1);
+      printf(1, "[Test 11] parent end");
+    }
+    else
+      printf(1, "[Test 11] child end\n");
+    break;
   case 'C':
+    printf(1, "Lock\n");
     schedulerLock(2019044711);
     pid = fork();
     sleep(10);
