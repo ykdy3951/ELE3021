@@ -742,9 +742,11 @@ scheduler(void)
     }
     // MLFQ has no locked process.
     else {
+      // runnable한 process를 찾는다.
       p = find_runnable_proc();
     }
 
+    // process가 존재하는 경우
     if (p != 0) {
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -759,12 +761,13 @@ scheduler(void)
 
       int lev = p->level;
 
-      // process가 정상적으로 끝났으면 time quantum을 상승시킨다.
+      // process가 정상적으로 끝났으면 time quantum, global_ticks을 상승시킨다.
       if (p->state == RUNNABLE){        
         p->time_quantum++;
         MLFQ.global_ticks++;
       }
       else if(p->is_locked == 1){
+        // 정상적으로 끝나지 않아도 locked process이면 global ticks를 상승시킨다.
         MLFQ.global_ticks++;
       }
       
