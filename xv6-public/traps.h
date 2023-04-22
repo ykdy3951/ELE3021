@@ -27,6 +27,8 @@
 #define T_SYSCALL       64      // system call
 #define T_DEFAULT      500      // catchall
 #define T_MYTRAP       128
+#define T_PROCLOCK     129
+#define T_PROCULOCK    130
 
 #define T_IRQ0          32      // IRQ 0 corresponds to int T_IRQ
 

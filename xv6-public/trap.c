@@ -24,6 +24,10 @@ tvinit(void)
   SETGATE(idt[T_SYSCALL], 1, SEG_KCODE<<3, vectors[T_SYSCALL], DPL_USER);
   SETGATE(idt[T_MYTRAP], 1, SEG_KCODE<<3, vectors[T_MYTRAP], DPL_USER);
 
+  // LOCK UNLOCK을 USER에서도 사용할 수 있도록 권한을 변경한다.
+  SETGATE(idt[T_PROCLOCK], 1, SEG_KCODE<<3, vectors[T_PROCLOCK], DPL_USER);
+  SETGATE(idt[T_PROCULOCK], 1, SEG_KCODE<<3, vectors[T_PROCULOCK], DPL_USER);
+
   initlock(&tickslock, "time");
 }
 
@@ -48,9 +52,25 @@ trap(struct trapframe *tf)
   }
 
   if(tf->trapno == T_MYTRAP){
-	  myfunction("user interrupt 128 called!");
-	  exit();
+    cprintf("my_userapp called\n");
+    myfunction("user interrupt 128 called!");
+    exit();
   }
+
+  // scheduler lock interrupt check
+  if(tf->trapno == T_PROCLOCK){
+    schedulerLock(2019044711);
+    yield();
+    return;
+  }
+  
+  // scheduler unlock interrupt check
+  if(tf->trapno == T_PROCULOCK){
+    schedulerUnlock(2019044711);
+    yield();
+    return;
+  }
+
   switch(tf->trapno){
   case T_IRQ0 + IRQ_TIMER:
     if(cpuid() == 0){
@@ -98,7 +118,6 @@ trap(struct trapframe *tf)
             tf->err, cpuid(), tf->eip, rcr2());
     myproc()->killed = 1;
   }
-
   // Force process exit if it has been killed and is in user space.
   // (If it is still executing in the kernel, let it keep running
   // until it gets to the regular system call return.)
@@ -106,9 +125,8 @@ trap(struct trapframe *tf)
     exit();
 
   // Force process to give up CPU on clock tick.
-  // If interrupts were on while locks held, would need to check nlock.
-  if(myproc() && myproc()->state == RUNNING &&
-     tf->trapno == T_IRQ0+IRQ_TIMER)
+  // If interrupts were on while locks held, would need to check nlock. 
+  if(myproc() && myproc()->state == RUNNING && tf->trapno == T_IRQ0 + IRQ_TIMER)
     yield();
 
   // Check if the process has been killed since we yielded
