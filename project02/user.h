@@ -23,6 +23,9 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int exec2(char *, char **, int);
+int setmemorylimit(int, int);
+void list(void);
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -37,3 +40,4 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+char *my_strtok(char *, const char *);

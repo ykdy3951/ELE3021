@@ -8,7 +8,7 @@
 #include "elf.h"
 
 int
-exec(char *path, char **argv)
+exec2(char *path, char **argv, int stacksize)
 {
   char *s, *last;
   int i, off;
@@ -18,6 +18,11 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
+
+  if (stacksize <= 0 || stacksize > 100){
+    cprintf("exec2: illegal stack size\n");
+    return -1;
+  }
 
   begin_op();
 
@@ -62,10 +67,12 @@ exec(char *path, char **argv)
 
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the user stack.
+  // stack size + 1 만큼의 PAGE를 할당 받는다. (가드용 페이지 1개 + stacksize 갯수의 PAGE)
   sz = PGROUNDUP(sz);
-  if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
+  if((sz = allocuvm(pgdir, sz, sz + (stacksize+1)*PGSIZE)) == 0)
     goto bad;
-  clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
+  // user의 접근을 막는 gaurd용 page로 설정한다.
+  clearpteu(pgdir, (char*)(sz - (stacksize+1)*PGSIZE));
   sp = sz;
 
   // Push argument strings, prepare rest of stack in ustack.

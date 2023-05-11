@@ -20,6 +20,43 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+int 
+setmemorylimit(int pid, int limit)
+{
+  int ret = -1;
+  struct proc *p;
+
+  if (limit < 0)
+  {
+    return ret;
+  }
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    if(p->pid == pid && p->sz <= limit)
+    {
+      p->memlim = limit;
+      ret = 0;
+      break;
+    }
+  release(&ptable.lock);
+  return ret;
+}
+
+void
+list(void)
+{
+  struct proc *p;
+  acquire(&ptable.lock);
+  cprintf("[Process Information]\n");
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state != RUNNABLE && p->state != RUNNING) continue;
+    cprintf("%s %d %d %d %d\n", p->name, p->pid, p->sz / PGSIZE - 1, p->sz, p->memlim);
+  }
+  release(&ptable.lock);
+}
+
 void
 pinit(void)
 {
@@ -88,6 +125,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->memlim = 0;
 
   release(&ptable.lock);
 
@@ -199,7 +237,10 @@ fork(void)
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
-
+  
+  // copy memory limit variable
+  np->memlim = curproc->memlim;
+  
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 

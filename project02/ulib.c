@@ -104,3 +104,34 @@ memmove(void *vdst, const void *vsrc, int n)
     *dst++ = *src++;
   return vdst;
 }
+
+char*
+my_strtok(char *str, const char* delimiters) 
+{
+  static char* cur;
+  char *delimiter;
+
+  if (str != 0) cur = str;
+  else str = cur;
+
+  if (*cur == 0) return 0;
+
+  while (*cur)
+  {
+    delimiter = (char *) delimiters;
+
+    while (*delimiter)
+    {
+      if(*cur == *delimiter)
+      {
+        *cur = 0;
+        ++cur;
+        return str;
+      }
+      ++delimiter;
+    }
+    ++cur;
+  }
+
+  return str;
+}
