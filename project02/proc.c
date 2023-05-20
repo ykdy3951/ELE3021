@@ -769,7 +769,6 @@ thread_join(thread_t thread, void **retval) {
       if(t->state == ZOMBIE){
         if (retval != 0)
           *retval = t->retval;
-        curproc->_ustack[t-curproc->ttable] = 0;
         kfree(t->kstack);
         t->kstack = 0;
         t->state = UNUSED;
