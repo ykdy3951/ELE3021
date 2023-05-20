@@ -34,23 +34,40 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+
+// Thread
+struct thread {
+  char *kstack;                // Bottom of kernel stack for this thread
+  enum procstate state;        // Process state
+  struct trapframe *tf;        // Trap frame for current syscall
+  struct context *context;     // swtch() here to run process
+  void *chan;                  // If non-zero, sleeping on chan
+
+  thread_t tid;                // Thread id
+  void *retval;                // return value of thread
+};
+
 // Per-process state
 struct proc {
   uint sz;                     // Size of process memory (bytes)
   pde_t* pgdir;                // Page table
-  char *kstack;                // Bottom of kernel stack for this process
   enum procstate state;        // Process state
   int pid;                     // Process ID
   struct proc *parent;         // Parent process
-  struct trapframe *tf;        // Trap frame for current syscall
-  struct context *context;     // swtch() here to run process
-  void *chan;                  // If non-zero, sleeping on chan
+
   int killed;                  // If non-zero, have been killed
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 
-  int memlim;
+  // Added
+  int memlim;                  // If zero, memory size is unlimit.
+  int ssize;                   // Stack size
+
+  // Thread
+  thread_t rectidx;                // 가장 최근에 접근했던 thread의 index (for scheduler)
+  struct thread ttable[NPROC];     // thread list
+  uint _ustack[NPROC];             // user stack for thread
 };
 
 // Process memory is laid out contiguously, low addresses first:

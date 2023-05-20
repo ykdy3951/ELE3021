@@ -101,11 +101,31 @@ exec2(char *path, char **argv, int stacksize)
   safestrcpy(curproc->name, last, sizeof(curproc->name));
 
   // Commit to the user image.
+  memset(curproc->_ustack, 0, sizeof(uint) * NPROC);
+  struct thread *t = &curproc->ttable[1];
+  for(; t < &curproc->ttable[NPROC]; t++){
+    if (t->kstack != 0) kfree(t->kstack);
+    t->kstack = 0;
+    t->state = UNUSED;
+    t->tf = 0;
+    t->context = 0;
+    t->chan = 0;
+    t->tid = 0;
+    t->retval = 0;
+  }
+
   oldpgdir = curproc->pgdir;
   curproc->pgdir = pgdir;
   curproc->sz = sz;
-  curproc->tf->eip = elf.entry;  // main
-  curproc->tf->esp = sp;
+  curproc->rectidx = 0;
+  curproc->ssize = 1;
+  curproc->memlim = 0;
+  
+  curproc->ssize = stacksize;
+  curproc->_ustack[0] = sz;
+  mainthread(curproc)->tf->eip = elf.entry;  // main
+  mainthread(curproc)->tf->esp = sp;
+
   switchuvm(curproc);
   freevm(oldpgdir);
   return 0;

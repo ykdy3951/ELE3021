@@ -143,6 +143,17 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
+void help(void)
+{
+  printf(2, "******************************************* HELP *******************************************\n");
+  printf(2, "* - list : print information of running & runnable process                                 *\n");
+  printf(2, "* - kill <pid> : kill the process corresponding to the pid                                 *\n");
+  printf(2, "* - execute <path> <stacksize> : execute the program located in the path with stacksize    *\n");
+  printf(2, "* - memlim <pid> <limit> : Set the memlim of the process corresponding to the pid to limit *\n");
+  printf(2, "* - exit : terminate pmanager program                                                      *\n");
+  printf(2, "********************************************************************************************\n");
+}
+
 int
 main(void)
 {
@@ -162,8 +173,10 @@ main(void)
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
     char *cmd = my_strtok(buf, " \n");
-
-    if(!strcmp(cmd, "list"))
+    if (!strcmp(cmd, "help")) {
+      help();
+    }
+    else if(!strcmp(cmd, "list"))
     {
       list();
     }
@@ -186,8 +199,10 @@ main(void)
       stacksize = 0;
       stacksize = atoi(my_strtok(0, " "));
 
-      if(fork1() == 0)
+      if(fork1() == 0) {
         runcmd(parsecmd(arg0));
+        exit();
+      }
     }
     else if(!strcmp(cmd, "memlim"))
     {
