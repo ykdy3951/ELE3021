@@ -21,38 +21,53 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+// memorylimit system call
 int 
 setmemorylimit(int pid, int limit)
 {
+  // Set return value -1 
   int ret = -1;
   struct proc *p;
 
+  // If limit argument is less than 0
+  // Return -1
   if (limit < 0)
   {
     return ret;
   }
 
+  // Acquire ptable lock
   acquire(&ptable.lock);
+  
+  // Set limit of process corresponding to pid second argument named limit
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->pid == pid && p->sz <= limit)
     {
+      // Set limit and ret
       p->memlim = limit;
       ret = 0;
       break;
     }
+  
+  // Release ptable lock
   release(&ptable.lock);
+
+  // Return ret
   return ret;
 }
 
+// list system call
 void
 list(void)
 {
   struct proc *p;
   acquire(&ptable.lock);
   cprintf("[Process Information]\n");
+
+  // If Mainthread of process is Running or Runnable, 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if (p->state != RUNNABLE && p->state != RUNNING) continue;
+    if (mainthread(p)->state != RUNNABLE && mainthread(p)->state != RUNNING) continue;
     cprintf("%s %d %d %d %d\n", p->name, p->pid, p->ssize, p->sz, p->memlim);
   }
   release(&ptable.lock);
@@ -103,12 +118,15 @@ myproc(void) {
   return p;
 }
 
+// Return Main thread of p
+// Return 0th thread of thread list of process
 // process의 main thread의 주소를 return한다.
 struct thread*
 mainthread(struct proc* p) {
-  return p->ttable;
+  return &p->ttable[p->mainidx];
 }
 
+// Return current thread of p like myproc function
 // process의 작동중인 thread의 주소를 return한다.
 struct thread*
 mythread(struct proc* p) {
@@ -137,23 +155,15 @@ allocproc(void)
   return 0;
 
 found:
-  for(t = p->ttable; t < &p->ttable[NPROC]; t++)
-  {
-    t->kstack = 0;
-    t->state = UNUSED;
-    t->tf = 0;
-    t->context = 0;
-    t->chan = 0;
-    t->tid = 0;
-    t->retval = 0;
-  }
-
   t = mainthread(p);
 
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->memlim = 0;
   p->ssize = 0;
+  p->rectidx = 0;
+  p->nextidx = 0;
+  p->mainidx = 0;
   memset(p->_ustack, 0, sizeof(uint) * NPROC);
 
   t->tid = nexttid++;
@@ -234,7 +244,6 @@ growproc(int n)
 {
   uint sz;
   struct proc *curproc = myproc();
-
   sz = curproc->sz;
   if(n > 0){
     if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
@@ -388,6 +397,7 @@ wait(void)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
+        // wait하면서 thread를 정리해준다.
         for(t = p->ttable; t < &p->ttable[NPROC]; t++){
           if (t->state == UNUSED) continue;
           p->_ustack[t-p->ttable] = 0;
@@ -405,6 +415,10 @@ wait(void)
         p->killed = 0;
         p->state = UNUSED;
         p->rectidx = 0;
+        p->mainidx = 0;
+        p->nextidx = 0;
+        p->ssize = 0;
+        p->memlim = 0;
         release(&ptable.lock);
         return pid;
       }
@@ -445,28 +459,33 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-      t = mythread(p);
+      t = &p->ttable[p->nextidx];
       for(int i = 0; i < NPROC; i++, t++){
         if (t == &p->ttable[NPROC]) 
           t = p->ttable;
-
-        if (t->state != RUNNABLE) continue;
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        c->proc = p;
-        p->rectidx = t - p->ttable;
-        switchuvm(p);
-
-        t->state = RUNNING;
-
-        swtch(&(c->scheduler), t->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
+        if (t->state == RUNNABLE) 
+          break;
       }
+      if (t->state != RUNNABLE)
+        continue;
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      p->rectidx = t - p->ttable;
+      p->nextidx = p->rectidx + 1;
+      if (p->nextidx == NPROC) p->nextidx = 0;
+      switchuvm(p);
+
+      t->state = RUNNING;
+
+      swtch(&(c->scheduler), t->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+      t = 0;
     }
     release(&ptable.lock);
 
@@ -611,6 +630,10 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
+      for(struct thread *t = p->ttable; t < &p->ttable[NPROC]; t++) {
+        if (t->state == SLEEPING) 
+          t->state = RUNNABLE;
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -656,16 +679,22 @@ procdump(void)
   }
 }
 
-// Thread
+// LWP - Light weight process
+// thread create, exit, join system call
+
+// Thread create
+// 현재 프로세스에 start_routine의 instruction으로 새로운 thread를 만드는 함수
 int 
 thread_create(thread_t * thread, void *(*start_routine)(void *), void *arg)
 {
+  // allocproc, fork, exec
   struct thread *t;
   struct proc *curproc = myproc();
   struct thread *curthread = mythread(curproc);
   uint sz;
   char *sp;
 
+// allocproc과 같이 process의 thread array에서 UNUSED인 공간을 찾는다.
   acquire(&ptable.lock);
 
   for(t = curproc->ttable; t < &curproc->ttable[NPROC]; t++)
@@ -675,6 +704,7 @@ thread_create(thread_t * thread, void *(*start_routine)(void *), void *arg)
   release(&ptable.lock);
   return -1;
 
+// UNUSED 공간 찾았을 경우
 found:
   t->tid = nexttid++;
   t->state = EMBRYO;
@@ -683,24 +713,29 @@ found:
   if((t->kstack = kalloc()) == 0)
     goto bad;
   
+  // stack pointer를 우선 설정한다.
   sp = t->kstack + KSTACKSIZE;
 
+  // stack pointer를 내리면서 작동에 필요한 구성요소들을 넣는다.
   // Leave room for trap frame.
   sp -= sizeof *curthread->tf;
   t->tf = (struct trapframe*)sp;
   *t->tf = *curthread->tf;
 
+  // trapret과 forkret을 넣는다.
   // Set up new context to start executing at forkret,
   // which returns to trapret.
   sp -= 4;
   *(uint*)sp = (uint)trapret;
 
+  // context 설정 부분
   sp -= sizeof *t->context;
   t->context = (struct context*)sp;
   memset(t->context, 0, sizeof *t->context);
   t->context->eip = (uint)forkret;
 
   // from exec
+  // 기존에 할당 받은 user stack이 아닌경우 user stack을 할당받고 설정한다.
   if (curproc->_ustack[t - curproc->ttable] == 0) {
     sz = PGROUNDUP(curproc->sz);
     if ((sz = allocuvm(curproc->pgdir, sz, sz + 2 * PGSIZE)) == 0)
@@ -708,9 +743,12 @@ found:
     clearpteu(curproc->pgdir, (char*)(sz - 2*PGSIZE));
     curproc->_ustack[t - curproc->ttable] = sz;
     curproc->sz = sz;
-  }
-  curproc->ssize++;
 
+    // stack용 페이지 수를 2개 늘린다.
+    curproc->ssize = curproc->ssize + 2;
+  }
+
+  // thread의 argument와 fake pc값을 넣어준다.
   sp = (char *)curproc->_ustack[t - curproc->ttable];
   sp -= 4;
   *(uint*)sp = (uint) arg;
@@ -718,10 +756,14 @@ found:
   *(uint*)sp = (uint) 0xffffffff;
 
   // Commit to the user image.
-  t->tf->eip = (uint)start_routine;  // main
+  // trap frame의 instruction pointer와 stack pointer를 설정해준다.
+  t->tf->eip = (uint)start_routine;  // thread가 작동할 함수의 주소값
   t->tf->esp = (uint)sp;
+
+  // 생성된 thread의 state를 RUNNABLE로 만들어준다.
   t->state = RUNNABLE;
 
+  // thread 인자에 새로 생긴 thread의 tid(thread id)를 넣어준다.
   *thread = t->tid;
   release(&ptable.lock);
   return 0;
@@ -744,7 +786,11 @@ thread_exit(void *retval){
 
   acquire(&ptable.lock);
 
+  // ZOMBIE와 retval을 설정해준다.
+  
+  // 현재 thread의 state를 ZOMBIE로 설정한다.
   t->state = ZOMBIE;
+  // thread에 retval를 정보를 넣어준다.
   t->retval = retval;
   wakeup1((void *)t->tid);
   
@@ -752,12 +798,13 @@ thread_exit(void *retval){
   panic("zombie exit");
 }
 
+// thread join
 int
 thread_join(thread_t thread, void **retval) {
   struct thread *t;
   int havekids;
   struct proc *curproc = myproc();
-  
+
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
@@ -779,6 +826,7 @@ thread_join(thread_t thread, void **retval) {
     }
 
     // No point waiting if we don't have any children.
+    // 자식이 없거나 현재 process가 kill count가 올라가 있으면 종료한다.
     if(!havekids || curproc->killed){
       release(&ptable.lock);
       return -1;

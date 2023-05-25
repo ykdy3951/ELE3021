@@ -1,282 +1,166 @@
-// #include "types.h"
-// #include "user.h"
-// #include "fcntl.h"
-
-// void *hello (void *arg) {
-//     int a = (int) arg;
-//     printf(1, "Hello, my thread : %d\n", a);
-//     thread_exit((void *) (a * 111));
-//     return 0;
-// }
-
-// int main(void) {
-//     thread_t t[10];
-//     for(int i = 0; i < 10; i++) {
-//         if (thread_create(&t[i], hello, (void *) i) == -1) {
-//             printf(1, "why?\n");
-//         }
-//     }
-//     sleep(100);
-//     exit();
-// }
-
 #include "types.h"
 #include "stat.h"
 #include "user.h"
 
-#define NUM_THREAD 10
-#define NTEST 5
+#define NUM_THREAD 5
 
-// Show race condition
-int racingtest(void);
+int status;
+thread_t thread[NUM_THREAD];
+int expected[NUM_THREAD];
 
-// Test basic usage of thread_create, thread_join, thread_exit
-int basictest(void);
-int jointest1(void);
-int jointest2(void);
-
-// Test whether a process can reuse the thread stack
-int stresstest(void);
-
-int gcnt;
-int gpipe[2];
-
-int (*testfunc[NTEST])(void) = {
-  racingtest,
-  basictest,
-  jointest1,
-  jointest2,
-  stresstest,
-};
-char *testname[NTEST] = {
-  "racingtest",
-  "basictest",
-  "jointest1",
-  "jointest2",
-  "stresstest",
-};
-
-int
-main(int argc, char *argv[])
+void failed()
 {
-  int i;
-  int ret;
-  int pid;
-  int start = 0;
-  int end = NTEST-1;
-  if (argc >= 2)
-    start = atoi(argv[1]);
-  if (argc >= 3)
-    end = atoi(argv[2]);
-
-  for (i = start; i <= end; i++){
-    printf(1,"%d. %s start\n", i, testname[i]);
-    if (pipe(gpipe) < 0){
-      printf(1,"pipe panic\n");
-      exit();
-    }
-    ret = 0;
-
-    if ((pid = fork()) < 0){
-      printf(1,"fork panic\n");
-      exit();
-    }
-    if (pid == 0){
-      close(gpipe[0]);
-      ret = testfunc[i]();
-      write(gpipe[1], (char*)&ret, sizeof(ret));
-      close(gpipe[1]);
-      exit();
-    } else{
-      close(gpipe[1]);
-      if (wait() == -1 || read(gpipe[0], (char*)&ret, sizeof(ret)) == -1 || ret != 0){
-        printf(1,"%d. %s panic\n", i, testname[i]);
-        exit();
-      }
-      close(gpipe[0]);
-    }
-    printf(1,"%d. %s finish\n", i, testname[i]);
-    sleep(100);
-  }
+  printf(1, "Test failed!\n");
   exit();
 }
 
-// ============================================================================
-void nop(){ }
-
-void*
-racingthreadmain(void *arg)
-{
-  int tid = (int) arg;
-  int i;
-  //int j;
-  int tmp;
-  for (i = 0; i < 10000000; i++){
-    tmp = gcnt;
-    tmp++;
-    nop();
-    gcnt = tmp;
-  }
-  thread_exit((void *)(tid+1));
-  return 0;
-}
-
-int
-racingtest(void)
-{
-  thread_t threads[NUM_THREAD];
-  int i;
-  void *retval;
-  gcnt = 0;
-  
-  for (i = 0; i < NUM_THREAD; i++){
-    if (thread_create(&threads[i], racingthreadmain, (void*)i) != 0){
-      printf(1, "panic at thread_create\n");
-      return -1;
-    }
-  }
-  for (i = 0; i < NUM_THREAD; i++){
-    if (thread_join(threads[i], &retval) != 0 || (int)retval != i+1){
-      printf(1, "panic at thread_join\n");
-      return -1;
-    }
-  }
-  printf(1,"%d\n", gcnt);
-  return 0;
-}
-
-// ============================================================================
-void*
-basicthreadmain(void *arg)
-{
-  int tid = (int) arg;
-  int i;
-  for (i = 0; i < 100000000; i++){
-    if (i % 20000000 == 0){
-      printf(1, "%d", tid);
-    }
-  }
-  thread_exit((void *)(tid+1));
-  return 0;
-}
-
-int
-basictest(void)
-{
-  thread_t threads[NUM_THREAD];
-  int i;
-  void *retval;
-  
-  for (i = 0; i < NUM_THREAD; i++){
-    if (thread_create(&threads[i], basicthreadmain, (void*)i) != 0){
-      printf(1, "panic at thread_create\n");
-      return -1;
-    }
-  }
-  for (i = 0; i < NUM_THREAD; i++){
-    if (thread_join(threads[i], &retval) != 0 || (int)retval != i+1){
-      printf(1, "panic at thread_join\n");
-      return -1;
-    }
-  }
-  printf(1,"\n");
-  return 0;
-}
-
-// ============================================================================
-
-void*
-jointhreadmain(void *arg)
+void *thread_basic(void *arg)
 {
   int val = (int)arg;
-  sleep(200);
-  printf(1, "thread_exit...\n");
-  thread_exit((void *)(val*2));
+  printf(1, "Thread %d start\n", val);
+  if (val == 1) {
+    sleep(200);
+    status = 1;
+  }
+  printf(1, "Thread %d end\n", val);
+  thread_exit(arg);
   return 0;
 }
 
-int
-jointest1(void)
+void *thread_fork(void *arg)
 {
-  thread_t threads[NUM_THREAD];
-  int i;
-  void *retval;
-  
-  for (i = 1; i <= NUM_THREAD; i++){
-    if (thread_create(&threads[i-1], jointhreadmain, (void*)i) != 0){
-      printf(1, "panic at thread_create\n");
-      return -1;
+  int val = (int)arg;
+  int pid;
+
+  printf(1, "Thread %d start\n", val);
+  pid = fork();
+  if (pid < 0) {
+    printf(1, "Fork error on thread %d\n", val);
+    failed();
+  }
+
+  if (pid == 0) {
+    printf(1, "Child of thread %d start\n", val);
+    sleep(100);
+    status = 3;
+    printf(1, "Child of thread %d end\n", val);
+    exit();
+  }
+  else {
+    status = 2;
+    if (wait() == -1) {
+      printf(1, "Thread %d lost their child\n", val);
+      failed();
     }
   }
-  printf(1, "thread_join!!!\n");
-  for (i = 1; i <= NUM_THREAD; i++){
-    if (thread_join(threads[i-1], &retval) != 0 || (int)retval != i * 2 ){
-      printf(1, "panic at thread_join\n");
-      return -1;
-    }
-  }
-  printf(1,"\n");
+  printf(1, "Thread %d end\n", val);
+  thread_exit(arg);
   return 0;
 }
 
-int
-jointest2(void)
+int *ptr;
+
+void *thread_sbrk(void *arg)
 {
-  thread_t threads[NUM_THREAD];
-  int i;
-  void *retval;
-  
-  for (i = 1; i <= NUM_THREAD; i++){
-    if (thread_create(&threads[i-1], jointhreadmain, (void*)(i)) != 0){
-      printf(1, "panic at thread_create\n");
-      return -1;
-    }
+  int val = (int)arg;
+  printf(1, "Thread %d start\n", val);
+
+  int i, j;
+
+  if (val == 0) {
+    ptr = (int *)malloc(65536);
+    sleep(100);
+    free(ptr);
+    ptr = 0;
   }
-  sleep(500);
-  printf(1, "thread_join!!!\n");
-  for (i = 1; i <= NUM_THREAD; i++){
-    if (thread_join(threads[i-1], &retval) != 0 || (int)retval != i * 2 ){
-      printf(1, "panic at thread_join\n");
-      return -1;
-    }
+  else {
+    while (ptr == 0)
+      sleep(1);
+    for (i = 0; i < 16384; i++)
+      ptr[i] = val;
   }
-  printf(1,"\n");
-  return 0;
-}
 
-// ============================================================================
+  while (ptr != 0)
+    sleep(1);
 
-void*
-stressthreadmain(void *arg)
-{
-  thread_exit(0);
-  return 0;
-}
-
-int
-stresstest(void)
-{
-  const int nstress = 35000;
-  thread_t threads[NUM_THREAD];
-  int i, n;
-  void *retval;
-
-  for (n = 1; n <= nstress; n++){
-    if (n % 1000 == 0)
-      printf(1, "%d\n", n);
-    for (i = 0; i < NUM_THREAD; i++){
-      if (thread_create(&threads[i], stressthreadmain, (void*)i) != 0){
-        printf(1, "panic at thread_create\n");
-        return -1;
+  for (i = 0; i < 2000; i++) {
+    int *p = (int *)malloc(65536);
+    for (j = 0; j < 16384; j++)
+      p[j] = val;
+    for (j = 0; j < 16384; j++) {
+      if (p[j] != val) {
+        printf(1, "Thread %d found %d\n", val, p[j]);
+        failed();
       }
     }
-    for (i = 0; i < NUM_THREAD; i++){
-      if (thread_join(threads[i], &retval) != 0){
-        printf(1, "panic at thread_join\n");
-        return -1;
-      }
+    free(p);
+  }
+
+  thread_exit(arg);
+  return 0;
+}
+void create_all(int n, void *(*entry)(void *))
+{
+  int i;
+  for (i = 0; i < n; i++) {
+    if (thread_create(&thread[i], entry, (void *)i) != 0) {
+      printf(1, "Error creating thread %d\n", i);
+      failed();
     }
   }
-  printf(1, "\n");
-  return 0;
+}
+
+void join_all(int n)
+{
+  int i, retval;
+  for (i = 0; i < n; i++) {
+    if (thread_join(thread[i], (void **)&retval) != 0) {
+      printf(1, "Error joining thread %d\n", i);
+      failed();
+    }
+    if (retval != expected[i]) {
+      printf(1, "Thread %d returned %d, but expected %d\n", i, retval, expected[i]);
+      failed();
+    }
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  int i;
+  for (i = 0; i < NUM_THREAD; i++)
+    expected[i] = i;
+
+  printf(1, "Test 1: Basic test\n");
+  create_all(2, thread_basic);
+  sleep(100);
+  printf(1, "Parent waiting for children...\n");
+  join_all(2);
+  if (status != 1) {
+    printf(1, "Join returned before thread exit, or the address space is not properly shared\n");
+    failed();
+  }
+  printf(1, "Test 1 passed\n\n");
+
+  printf(1, "Test 2: Fork test\n");
+  create_all(NUM_THREAD, thread_fork);
+  join_all(NUM_THREAD);
+  if (status != 2) {
+    if (status == 3) {
+      printf(1, "Child process referenced parent's memory\n");
+    }
+    else {
+      printf(1, "Status expected 2, found %d\n", status);
+    }
+    failed();
+  }
+  printf(1, "Test 2 passed\n\n");
+
+  printf(1, "Test 3: Sbrk test\n");
+  create_all(NUM_THREAD, thread_sbrk);
+  join_all(NUM_THREAD);
+  printf(1, "Test 3 passed\n\n");
+
+  printf(1, "All tests passed!\n");
+  exit();
 }

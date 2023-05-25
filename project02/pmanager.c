@@ -145,13 +145,14 @@ getcmd(char *buf, int nbuf)
 
 void help(void)
 {
-  printf(2, "******************************************* HELP *******************************************\n");
-  printf(2, "* - list : print information of running & runnable process                                 *\n");
-  printf(2, "* - kill <pid> : kill the process corresponding to the pid                                 *\n");
-  printf(2, "* - execute <path> <stacksize> : execute the program located in the path with stacksize    *\n");
-  printf(2, "* - memlim <pid> <limit> : Set the memlim of the process corresponding to the pid to limit *\n");
-  printf(2, "* - exit : terminate pmanager program                                                      *\n");
-  printf(2, "********************************************************************************************\n");
+  printf(1, "******************************************* HELP *******************************************\n");
+  printf(1, "* - list : print information of running & runnable process                                 *\n");
+  printf(1, "* - kill <pid> : kill the process corresponding to the pid                                 *\n");
+  printf(1, "* - execute <path> <stacksize> : execute the program located in the path with stacksize    *\n");
+  printf(1, "* - memlim <pid> <limit> : Set the memlim of the process corresponding to the pid to limit *\n");
+  printf(1, "* - exit : terminate pmanager program                                                      *\n");
+  printf(1, "* - help : print all instruction of pmanager                                               *\n");
+  printf(1, "********************************************************************************************\n");
 }
 
 int
@@ -169,7 +170,8 @@ main(void)
   }
 
   printf(1, "[Process Manager]\n");
-
+  help();
+  
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
     char *cmd = my_strtok(buf, " \n");
@@ -185,11 +187,11 @@ main(void)
       int pid = atoi(my_strtok(0, " "));
       if (!kill(pid)) 
       {
-        printf(2, "[kill] Success\n");
+        printf(1, "[kill] Success\n");
       }
       else
       {
-        printf(2, "[kill] Fail\n");
+        printf(1, "[kill] Fail\n");
       }
       wait();
     }
@@ -201,7 +203,6 @@ main(void)
 
       if(fork1() == 0) {
         runcmd(parsecmd(arg0));
-        exit();
       }
     }
     else if(!strcmp(cmd, "memlim"))
@@ -211,16 +212,16 @@ main(void)
 
       if (setmemorylimit(pid, limit) != 0)
       {
-        printf(2, "[memlim] Fail\n");
+        printf(1, "[memlim] Fail\n");
       }
       else
       {
-        printf(2, "[memlim] Success\n");
+        printf(1, "[memlim] Success\n");
       }
     }
     else if(!strcmp(cmd, "exit"))
     {
-      printf(2, "[exit] Exit\n");
+      printf(1, "[exit] Exit\n");
       break;
     }
   }

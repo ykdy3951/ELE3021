@@ -223,7 +223,9 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
   char *mem;
   uint a;
-
+  // memory limit check
+  if(myproc()->memlim != 0 && newsz > myproc()->memlim)
+    return 0;
   if(newsz >= KERNBASE)
     return 0;
   if(newsz < oldsz)
@@ -257,7 +259,6 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
   pte_t *pte;
   uint a, pa;
-
   if(newsz >= oldsz)
     return oldsz;
 

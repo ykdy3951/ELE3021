@@ -18,7 +18,8 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
-
+  struct thread *t;
+  
   begin_op();
 
   if((ip = namei(path)) == 0){
@@ -94,33 +95,35 @@ exec(char *path, char **argv)
   safestrcpy(curproc->name, last, sizeof(curproc->name));
 
   // Commit to the user image.
-  memset(curproc->_ustack, 0, sizeof(uint) * NPROC);
-  struct thread *t = &curproc->ttable[1];
-  for(; t < &curproc->ttable[NPROC]; t++){
-    if (t->kstack != 0) kfree(t->kstack);
-    t->kstack = 0;
-    t->state = UNUSED;
-    t->tf = 0;
-    t->context = 0;
-    t->chan = 0;
-    t->tid = 0;
-    t->retval = 0;
-  }
-
   oldpgdir = curproc->pgdir;
   curproc->pgdir = pgdir;
   curproc->sz = sz;
-  curproc->rectidx = 0;
-  curproc->memlim = 0;
-  curproc->ssize = 0;
 
-  curproc->ssize = 1;
-  curproc->_ustack[0] = sz;
+  curproc->mainidx = curproc->rectidx;
+  curproc->_ustack[curproc->rectidx] = sz;
+
+  for(i = 0; i < NPROC; i++){
+    if (i == curproc->mainidx) continue;
+    t = &curproc->ttable[i];
+    if (t->state != UNUSED) 
+      kfree(t->kstack);
+    t->kstack = 0;
+    t->tid = 0;
+    t->retval = 0;
+    t->state = UNUSED;
+    curproc->_ustack[i] = 0;
+  }
+
+
+  curproc->memlim = 0;
+  curproc->ssize = 2;
+  curproc->nextidx = curproc->rectidx;
   mainthread(curproc)->tf->eip = elf.entry;  // main
   mainthread(curproc)->tf->esp = sp;
   
   switchuvm(curproc);
   freevm(oldpgdir);
+
   return 0;
 
  bad:
