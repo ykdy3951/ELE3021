@@ -62,7 +62,7 @@ struct proc {
 
   // Added
   int memlim;                  // If zero, memory size is unlimit.
-  int ssize;                   // Stack size
+  int ssize;                   // Stack용 페이지 갯수
 
   // Thread
   int rectidx;                // 가장 최근에 접근했던 thread의 index (for scheduler)
