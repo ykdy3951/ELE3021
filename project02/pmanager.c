@@ -143,6 +143,8 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
+// help
+// 도움말을 출력해주는 기능 (부가)
 void help(void)
 {
   printf(1, "******************************************* HELP *******************************************\n");
@@ -174,14 +176,19 @@ main(void)
   
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
+    // buf에서 cmd명을 분리해낸다.
+    // 각 cmd명에 해당하는 함수를 출력한다.
     char *cmd = my_strtok(buf, " \n");
+    // help
     if (!strcmp(cmd, "help")) {
       help();
     }
+    // runnable or running 상태인 process들을 출력한다.
     else if(!strcmp(cmd, "list"))
     {
       list();
     }
+    // pid에 해당하는 process를 제거한다.
     else if(!strcmp(cmd, "kill"))
     {
       int pid = atoi(my_strtok(0, " "));
@@ -195,6 +202,7 @@ main(void)
       }
       wait();
     }
+    // execute (exec2 system call 이용)
     else if(!strcmp(cmd, "execute"))
     {
       char *arg0 = my_strtok(0, " ");
@@ -203,8 +211,10 @@ main(void)
 
       if(fork1() == 0) {
         runcmd(parsecmd(arg0));
+        exit();
       }
     }
+    // setmemorylimit system call
     else if(!strcmp(cmd, "memlim"))
     {
       int pid = atoi(my_strtok(0, " "));
@@ -219,12 +229,15 @@ main(void)
         printf(1, "[memlim] Success\n");
       }
     }
+    // exit인경우 loop를 탈출한다.
     else if(!strcmp(cmd, "exit"))
     {
       printf(1, "[exit] Exit\n");
       break;
     }
   }
+
+  // exit
   exit();
 }
 
