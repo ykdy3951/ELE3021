@@ -67,7 +67,7 @@ struct proc {
   // Thread
   int rectidx;                // 가장 최근에 접근했던 thread의 index (for scheduler)
   int mainidx;                // main thread의 index
-  int nextidx;                // 다음에 스케줄될 process의 index
+  int nextidx;                // 다음에 스케줄될 thread의 index
   struct thread ttable[NPROC];     // thread list
   uint _ustack[NPROC];             // user stack for thread
 };

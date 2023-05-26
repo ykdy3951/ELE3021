@@ -213,6 +213,7 @@ userinit(void)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
+  p->_ustack[t-p->ttable] = PGSIZE;
   memset(t->tf, 0, sizeof(*t->tf));
   t->tf->cs = (SEG_UCODE << 3) | DPL_USER;
   t->tf->ds = (SEG_UDATA << 3) | DPL_USER;
@@ -245,6 +246,8 @@ growproc(int n)
   uint sz;
   struct proc *curproc = myproc();
   sz = curproc->sz;
+  if(curproc->memlim != 0 && curproc->memlim < sz + n)
+    return -1;
   if(n > 0){
     if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
       return -1;
@@ -738,6 +741,10 @@ found:
   // 기존에 할당 받은 user stack이 아닌경우 user stack을 할당받고 설정한다.
   if (curproc->_ustack[t - curproc->ttable] == 0) {
     sz = PGROUNDUP(curproc->sz);
+
+    if (curproc->memlim != 0 && curproc->memlim < sz + 2 * PGSIZE)
+      goto bad;
+
     if ((sz = allocuvm(curproc->pgdir, sz, sz + 2 * PGSIZE)) == 0)
       goto bad;
     clearpteu(curproc->pgdir, (char*)(sz - 2*PGSIZE));
