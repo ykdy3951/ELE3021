@@ -499,6 +499,7 @@ itrunc(struct inode *ip)
         }
         brelse(bp2);
         bfree(ip->dev, a[i]);
+        a[i] = 0;
       }
     }
     brelse(bp);
@@ -523,10 +524,12 @@ itrunc(struct inode *ip)
             }
             brelse(bp3);
             bfree(ip->dev, a2[j]);
+            a2[j] = 0;
           }
         }
         brelse(bp2);
         bfree(ip->dev, a[i]);
+        a[i] = 0;
       }
     }
     brelse(bp);
