@@ -121,6 +121,11 @@ recover_from_log(void)
   write_head(); // clear the log
 }
 
+// int sync(void) 
+// {
+
+// }
+
 // called at the start of each FS system call.
 void
 begin_op(void)
@@ -131,6 +136,8 @@ begin_op(void)
       sleep(&log, &log.lock);
     } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE){
       // this op might exhaust log space; wait for commit.
+      // 공간이 부족하므로
+      // sync();
       sleep(&log, &log.lock);
     } else {
       log.outstanding += 1;
