@@ -65,32 +65,25 @@ testsymlink(void)
 
   fd1 = open("/testsymlink/a", O_CREATE | O_RDWR);
   if(fd1 < 0) fail("failed to open a");
-  printf(1, "success\n");
   r = symlink("/testsymlink/a", "/testsymlink/b");
   if(r < 0)
     fail("symlink b -> a failed");
-  printf(1, "success\n");
   if(write(fd1, buf, sizeof(buf)) != 4)
     fail("failed to write to a");
-  printf(1, "success\n");
   if (stat_slink("/testsymlink/b", &st) != 0)
     fail("failed to stat b");
-  printf(1, "success\n");
   if(st.type != T_SYMLINK)
     fail("b isn't a symlink");
-  printf(1, "success\n");
   fd2 = open("/testsymlink/b", O_RDWR);
   if(fd2 < 0)
     fail("failed to open b");
-  printf(1, "success\n");
   read(fd2, &c, 1);
+  printf(1, "%c\n", c);
   if (c != 'a')
     fail("failed to read bytes from b");
-  printf(1, "success\n");
   unlink("/testsymlink/a");
   if(open("/testsymlink/b", O_RDWR) >= 0)
     fail("Should not be able to open b after deleting a");
-  printf(1, "success\n");
   r = symlink("/testsymlink/b", "/testsymlink/a");
   if(r < 0)
     fail("symlink a -> b failed");
