@@ -325,13 +325,12 @@ sys_open(void)
   }
 
   if (!(omode & O_NOFOLLOW)) {
-    int i = 0, len;
+    int len;
     char dest[100];
-    while(ip->type == T_SYMLINK && i < 10) {
-      
+    while(ip->type == T_SYMLINK) {
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
-      
+
       dest[len] = '\0';
       iunlockput(ip);
       if((ip = namei(path)) == 0){
@@ -344,7 +343,6 @@ sys_open(void)
         end_op();
         return -1;
       }
-      i++;
     }
   }
   iunlock(ip);
