@@ -343,12 +343,6 @@ sys_open(void)
         end_op();
         return -1;
       }
-      
-      if (readi(ip, path, 0, sizeof(path)) != sizeof(path)) {
-        iunlockput(ip);
-        end_op();
-        return -1;
-      }
     }
   }
   iunlock(ip);
