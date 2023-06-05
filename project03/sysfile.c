@@ -330,7 +330,7 @@ sys_open(void)
     while(ip->type == T_SYMLINK && index < 10) {
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
-
+      cprintf("%s\n", path);
       dest[len] = '\0';
       iunlockput(ip);
       if((ip = namei(path)) == 0){
@@ -500,6 +500,5 @@ sys_symlink(void)
   writei(ip, old, sizeof(len), len + 1);
   iunlockput(ip);
   end_op();
-  sync();
   return 0;
 }
