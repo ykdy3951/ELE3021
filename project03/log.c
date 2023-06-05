@@ -128,7 +128,7 @@ get_log_num(void)
 }
 
 int 
-sync_commit(void) 
+sync(void) 
 {
   int fpage = -1;
   if (log.lh.n > 0) {
@@ -165,7 +165,7 @@ begin_op(void)
       // this op might exhaust log space; wait for commit.
       // 공간이 부족하므로
       release(&log.lock);
-      sync_commit();
+      sync();
       acquire(&log.lock);
       // sleep(&log, &log.lock);
     } else {
