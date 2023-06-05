@@ -122,7 +122,7 @@ recover_from_log(void)
 }
 
 int 
-sync_commit(void) 
+sync(void) 
 {
   int fpage = 0;
   acquire(&log.lock);
@@ -157,7 +157,7 @@ begin_op(void)
       // this op might exhaust log space; wait for commit.
       // 공간이 부족하므로
       release(&log.lock);
-      sync_commit();
+      sync();
       acquire(&log.lock);
       // sleep(&log, &log.lock);
     } else {
