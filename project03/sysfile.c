@@ -486,7 +486,7 @@ sys_symlink(void)
   char *new, *old;
   struct inode *ip;
   int len;
-  if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
+  if (argstr(0, &new) < 0 || argstr(1, &old) < 0)
     return -1;
 
   begin_op();
