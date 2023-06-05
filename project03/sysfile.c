@@ -345,6 +345,11 @@ sys_open(void)
       }
       index++;
     }
+    if (index >= 10) {
+      iunlockput(ip);
+      end_op();
+      return -1;
+    }
   }
   iunlock(ip);
   end_op();
