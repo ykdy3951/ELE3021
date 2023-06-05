@@ -448,3 +448,9 @@ sys_sync(void)
 {
   return sync_commit();
 }
+
+int
+sys_get_log_num(void)
+{
+  return get_log_num();
+}

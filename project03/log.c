@@ -121,27 +121,35 @@ recover_from_log(void)
   write_head(); // clear the log
 }
 
+int
+get_log_num(void)
+{
+  return log.lh.n;
+}
+
 int 
 sync_commit(void) 
 {
-  int fpage = 0;
-  acquire(&log.lock);
+  int fpage = -1;
+  if (log.lh.n > 0) {
+    acquire(&log.lock);
 
-  while(log.outstanding > 0) {
-    sleep(&log, &log.lock);
+    log.committing = 1;
+    while(log.outstanding > 0) {
+      sleep(&log, &log.lock);
+    }
+
+    fpage = log.lh.n;
+    release(&log.lock);
+
+    // commit & set 0 committing var 
+    // wake up lock
+    commit();
+    acquire(&log.lock);
+    log.committing = 0;
+    wakeup(&log);
+    release(&log.lock);
   }
-  log.committing = 1;
-  fpage = log.lh.n;
-  release(&log.lock);
-
-  // commit & set 0 committing var 
-  // wake up lock
-  commit();
-  acquire(&log.lock);
-  log.committing = 0;
-  wakeup(&log);
-  release(&log.lock);
-
   return fpage;
 }
 
