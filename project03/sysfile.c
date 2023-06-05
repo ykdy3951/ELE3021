@@ -326,7 +326,7 @@ sys_open(void)
 
   if (!(omode & O_NOFOLLOW)) {
     while(ip->type == T_SYMLINK) {
-      if (readi(ip, path, 0, sizeof(path)) != sizeof(path)) {
+      if (readi(ip, path, 0, ip->size) != ip->size) {
         iunlockput(ip);
         end_op();
         return -1;
@@ -494,7 +494,7 @@ sys_symlink(void)
     return -1;
   }
 
-  if (writei(ip, old, 0, sizeof(old)) != sizeof(old)) {
+  if (writei(ip, old, 0, sizeof(ip)) != sizeof(ip)) {
     iunlockput(ip);
     end_op();
     return -1;
