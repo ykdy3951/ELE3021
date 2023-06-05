@@ -65,49 +65,51 @@ testsymlink(void)
 
   fd1 = open("/testsymlink/a", O_CREATE | O_RDWR);
   if(fd1 < 0) fail("failed to open a");
-
+  printf(1, "success\n");
   r = symlink("/testsymlink/a", "/testsymlink/b");
   if(r < 0)
     fail("symlink b -> a failed");
-
+  printf(1, "success\n");
   if(write(fd1, buf, sizeof(buf)) != 4)
     fail("failed to write to a");
-
+  printf(1, "success\n");
   if (stat_slink("/testsymlink/b", &st) != 0)
     fail("failed to stat b");
+  printf(1, "success\n");
   if(st.type != T_SYMLINK)
     fail("b isn't a symlink");
-
+  printf(1, "success\n");
   fd2 = open("/testsymlink/b", O_RDWR);
   if(fd2 < 0)
     fail("failed to open b");
+  printf(1, "success\n");
   read(fd2, &c, 1);
   if (c != 'a')
     fail("failed to read bytes from b");
-
+  printf(1, "success\n");
   unlink("/testsymlink/a");
   if(open("/testsymlink/b", O_RDWR) >= 0)
     fail("Should not be able to open b after deleting a");
-
+  printf(1, "success\n");
   r = symlink("/testsymlink/b", "/testsymlink/a");
   if(r < 0)
     fail("symlink a -> b failed");
-
+  printf(1, "success\n");
   r = open("/testsymlink/b", O_RDWR);
   if(r >= 0)
     fail("Should not be able to open b (cycle b->a->b->..)\n");
-  
+  printf(1, "success\n");
   r = symlink("/testsymlink/nonexistent", "/testsymlink/c");
   if(r != 0)
     fail("Symlinking to nonexistent file should succeed\n");
-
+  printf(1, "success\n");
   r = symlink("/testsymlink/2", "/testsymlink/1");
   if(r) fail("Failed to link 1->2");
   r = symlink("/testsymlink/3", "/testsymlink/2");
   if(r) fail("Failed to link 2->3");
   r = symlink("/testsymlink/4", "/testsymlink/3");
   if(r) fail("Failed to link 3->4");
-
+  printf(1, "success\n");
   close(fd1);
   close(fd2);
 
@@ -115,7 +117,7 @@ testsymlink(void)
   if(fd1<0) fail("Failed to create 4\n");
   fd2 = open("/testsymlink/1", O_RDWR);
   if(fd2<0) fail("Failed to open 1\n");
-
+  printf(1, "success\n");
   c = '#';
   r = write(fd2, &c, 1);
   if(r!=1) fail("Failed to write to 1\n");
@@ -123,7 +125,7 @@ testsymlink(void)
   if(r!=1) fail("Failed to read from 4\n");
   if(c!=c2)
     fail("Value read from 4 differed from value written to 1\n");
-
+  printf(1, "success\n");
   printf(1, "test symlinks: ok\n");
 done:
   close(fd1);
