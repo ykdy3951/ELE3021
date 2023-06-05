@@ -57,7 +57,7 @@ main(int argc, char *argv[])
         exit();
       } 
 
-      if (sync()) {
+      if (sync() == -1) {
         printf(1, "sync failed\n");
         exit();
       }
