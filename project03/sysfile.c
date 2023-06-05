@@ -287,10 +287,11 @@ create(char *path, short type, short major, short minor)
 int
 sys_open(void)
 {
-  char *path;
+  char *path, dest[100];
   int fd, omode;
   struct file *f;
   struct inode *ip;
+  int len;
 
   if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
@@ -325,8 +326,6 @@ sys_open(void)
   }
 
   if (!(omode & O_NOFOLLOW)) {
-    int len;
-    char dest[100];
     while(ip->type == T_SYMLINK) {
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
