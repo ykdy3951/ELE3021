@@ -494,7 +494,7 @@ sys_symlink(void)
     return -1;
   }
 
-  if (writei(ip, old, 0, sizeof(ip)) != sizeof(ip)) {
+  if (writei(ip, old, 0, ip->size) != ip->size) {
     iunlockput(ip);
     end_op();
     return -1;
