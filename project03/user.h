@@ -23,7 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int symlink(void);
+int symlink(const char *, const char *);
 int sync(void);
 int get_log_num(void);
 

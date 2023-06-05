@@ -174,7 +174,7 @@ sys_symlink(void)
     return -1;
 
   begin_op();
-  if((ip == create(new, T_SYMLINK, 0, 0)) == 0){
+  if((ip = create(new, T_SYMLINK, 0, 0)) == 0){
     end_op();
     return -1;
   }
