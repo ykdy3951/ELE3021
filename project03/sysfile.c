@@ -164,33 +164,6 @@ bad:
   return -1;
 }
 
-int
-sys_symlink(void)
-{
-  char *new, *old;
-  struct inode *ip;
-
-  if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
-    return -1;
-
-  begin_op();
-  ip = create(new, T_SYMLINK, 0, 0);
-  if(ip == 0){
-    end_op();
-    return -1;
-  }
-
-  if (writei(ip, old, 0, sizeof(old)) != sizeof(old)) {
-    iunlockput(ip);
-    end_op();
-    return -1;
-  }
-
-  iunlockput(ip);
-  end_op();
-  return 0;
-}
-
 // Is the directory dp empty except for "." and ".." ?
 static int
 isdirempty(struct inode *dp)
@@ -504,4 +477,30 @@ int
 sys_get_log_num(void)
 {
   return get_log_num();
+}
+
+int
+sys_symlink(void)
+{
+  char *new, *old;
+  struct inode *ip;
+
+  if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
+    return -1;
+
+  begin_op();
+  if((ip = create(new, T_SYMLINK, 0, 0)) == 0){
+    end_op();
+    return -1;
+  }
+
+  if (writei(ip, old, 0, sizeof(old)) != sizeof(old)) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+
+  iunlockput(ip);
+  end_op();
+  return 0;
 }
