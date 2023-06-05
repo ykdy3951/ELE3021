@@ -331,7 +331,7 @@ sys_open(void)
       
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
-      cprintf("%d\n", len);
+      
       dest[len] = '\0';
       iunlockput(ip);
       if((ip = namei(path)) == 0){
