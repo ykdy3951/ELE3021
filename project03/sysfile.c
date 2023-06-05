@@ -330,10 +330,10 @@ sys_open(void)
     while(ip->type == T_SYMLINK && index < 10) {
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
-      cprintf("%s\n", path);
       dest[len] = '\0';
+
       iunlockput(ip);
-      if((ip = namei(path)) == 0){
+      if((ip = namei(dest)) == 0){
         end_op();
         return -1;
       }
@@ -486,7 +486,7 @@ sys_symlink(void)
   char *new, *old;
   struct inode *ip;
   int len;
-  if (argstr(0, &new) < 0 || argstr(1, &old) < 0)
+  if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
     return -1;
 
   begin_op();
