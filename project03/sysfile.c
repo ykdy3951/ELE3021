@@ -325,13 +325,14 @@ sys_open(void)
   }
 
   if (!(omode & O_NOFOLLOW)) {
-    while(ip->type == T_SYMLINK) {
-      if (readi(ip, path, 0, ip->size) != ip->size) {
-        iunlockput(ip);
-        end_op();
-        return -1;
-      }
-
+    int i = 0, len;
+    char dest[100];
+    while(ip->type == T_SYMLINK && i < 10) {
+      
+      readi(ip, (char *)&len, 0, sizeof(len));
+      readi(ip, dest, sizeof(len), len+1);
+      cprintf("%d\n", len);
+      dest[len] = '\0';
       iunlockput(ip);
       if((ip = namei(path)) == 0){
         end_op();
@@ -343,6 +344,7 @@ sys_open(void)
         end_op();
         return -1;
       }
+      i++;
     }
   }
   iunlock(ip);
@@ -484,7 +486,7 @@ sys_symlink(void)
 {
   char *new, *old;
   struct inode *ip;
-
+  int len;
   if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
     return -1;
 
@@ -494,12 +496,9 @@ sys_symlink(void)
     return -1;
   }
 
-  if (writei(ip, old, 0, ip->size) != ip->size) {
-    iunlockput(ip);
-    end_op();
-    return -1;
-  }
-
+  len = strlen(old);
+  writei(ip, (char *)&len, 0, sizeof(len));
+  writei(ip, old, sizeof(len), len + 1);
   iunlockput(ip);
   end_op();
   return 0;
