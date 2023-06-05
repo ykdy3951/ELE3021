@@ -500,5 +500,6 @@ sys_symlink(void)
   writei(ip, old, sizeof(len), len + 1);
   iunlockput(ip);
   end_op();
+  sync();
   return 0;
 }
