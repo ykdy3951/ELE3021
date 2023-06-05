@@ -164,6 +164,32 @@ bad:
   return -1;
 }
 
+int
+sys_symlink(void)
+{
+  char *new, *old;
+  struct inode *ip;
+
+  if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
+    return -1;
+
+  begin_op();
+  if((ip == create(new, T_SYMLINK, 0, 0)) == 0){
+    end_op();
+    return -1;
+  }
+
+  if (writei(ip, old, 0, sizeof(old)) != sizeof(old)) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+
+  iunlockput(ip);
+  end_op();
+  return 0;
+}
+
 // Is the directory dp empty except for "." and ".." ?
 static int
 isdirempty(struct inode *dp)
@@ -253,6 +279,8 @@ create(char *path, short type, short major, short minor)
     ilock(ip);
     if(type == T_FILE && ip->type == T_FILE)
       return ip;
+    if(type == T_SYMLINK)
+      return ip;
     iunlockput(ip);
     return 0;
   }
@@ -320,6 +348,28 @@ sys_open(void)
     iunlockput(ip);
     end_op();
     return -1;
+  }
+
+  if (!(omode & O_NOFOLLOW)) {
+    while(ip->type == T_SYMLINK) {
+      if (readi(ip, path, 0, sizeof(path)) != sizeof(path)) {
+        iunlockput(ip);
+        end_op();
+        return -1;
+      }
+
+      iunlockput(ip);
+      if((ip = namei(path)) == 0){
+        end_op();
+        return -1;
+      }
+      ilock(ip);
+      if(ip->type == T_DIR && omode != O_RDONLY){
+        iunlockput(ip);
+        end_op();
+        return -1;
+      }
+    }
   }
   iunlock(ip);
   end_op();
