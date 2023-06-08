@@ -631,6 +631,7 @@ createdelete(void)
       name[0] = 'p' + pi;
       name[1] = '0' + i;
       fd = open(name, 0);
+      sync();
       if((i == 0 || i >= N/2) && fd < 0){
         printf(1, "oops createdelete %s didn't exist\n", name);
         exit();
