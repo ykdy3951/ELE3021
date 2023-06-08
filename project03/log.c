@@ -161,13 +161,13 @@ begin_op(void)
   while(1){
     if(log.committing){
       sleep(&log, &log.lock);
-    } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE){
+    } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE - 1){
       // this op might exhaust log space; wait for commit.
       // 공간이 부족하므로
-      // release(&log.lock);
-      // sync();
-      // acquire(&log.lock);
-      sleep(&log, &log.lock);
+      release(&log.lock);
+      sync();
+      acquire(&log.lock);
+      // sleep(&log, &log.lock);
     } else {
       log.outstanding += 1;
       release(&log.lock);
@@ -181,39 +181,38 @@ begin_op(void)
 void
 end_op(void)
 {
-//   acquire(&log.lock);
-//   log.outstanding -= 1;
-//   if(log.outstanding < 0)
-//     panic("log.outstanding");
-//   release(&log.lock);
-
-  int do_commit = 0;
-
   acquire(&log.lock);
   log.outstanding -= 1;
-  if(log.committing)
-    panic("log.committing");
-  if(log.outstanding == 0){
-    do_commit = 1;
-    log.committing = 1;
-  } else {
-    // begin_op() may be waiting for log space,
-    // and decrementing log.outstanding has decreased
-    // the amount of reserved space.
-    wakeup(&log);
-  }
+  if(log.outstanding < 0)
+    panic("log.outstanding");
   release(&log.lock);
 
-  if(do_commit){
-    // call commit w/o holding locks, since not allowed
-    // to sleep with locks.
-    commit();
-    acquire(&log.lock);
-    log.committing = 0;
-    wakeup(&log);
-    release(&log.lock);
-  }
+  // int do_commit = 0;
 
+  // acquire(&log.lock);
+  // log.outstanding -= 1;
+  // if(log.committing)
+  //   panic("log.committing");
+  // if(log.outstanding == 0){
+  //   do_commit = 1;
+  //   log.committing = 1;
+  // } else {
+  //   // begin_op() may be waiting for log space,
+  //   // and decrementing log.outstanding has decreased
+  //   // the amount of reserved space.
+  //   wakeup(&log);
+  // }
+  // release(&log.lock);
+
+  // if(do_commit){
+  //   // call commit w/o holding locks, since not allowed
+  //   // to sleep with locks.
+  //   commit();
+  //   acquire(&log.lock);
+  //   log.committing = 0;
+  //   wakeup(&log);
+  //   release(&log.lock);
+  // }
 }
 
 // Copy modified blocks from cache to log.
