@@ -12,7 +12,7 @@
 static int failed = 0;
 
 static void testsymlink(void);
-// static void concur(void);
+static void concur(void);
 static void cleanup(void);
 
 int
@@ -20,7 +20,7 @@ main(int argc, char *argv[])
 {
   cleanup();
   testsymlink();
-//   concur();
+  concur();
   exit();
 }
 
@@ -78,7 +78,6 @@ testsymlink(void)
   if(fd2 < 0)
     fail("failed to open b");
   read(fd2, &c, 1);
-  printf(1, "%c\n", c);
   if (c != 'a')
     fail("failed to read bytes from b");
   unlink("/testsymlink/a");
@@ -87,22 +86,18 @@ testsymlink(void)
   r = symlink("/testsymlink/b", "/testsymlink/a");
   if(r < 0)
     fail("symlink a -> b failed");
-  printf(1, "success\n");
   r = open("/testsymlink/b", O_RDWR);
   if(r >= 0)
     fail("Should not be able to open b (cycle b->a->b->..)\n");
-  printf(1, "success\n");
   r = symlink("/testsymlink/nonexistent", "/testsymlink/c");
   if(r != 0)
     fail("Symlinking to nonexistent file should succeed\n");
-  printf(1, "success\n");
   r = symlink("/testsymlink/2", "/testsymlink/1");
   if(r) fail("Failed to link 1->2");
   r = symlink("/testsymlink/3", "/testsymlink/2");
   if(r) fail("Failed to link 2->3");
   r = symlink("/testsymlink/4", "/testsymlink/3");
   if(r) fail("Failed to link 3->4");
-  printf(1, "success\n");
   close(fd1);
   close(fd2);
 
@@ -110,7 +105,6 @@ testsymlink(void)
   if(fd1<0) fail("Failed to create 4\n");
   fd2 = open("/testsymlink/1", O_RDWR);
   if(fd2<0) fail("Failed to open 1\n");
-  printf(1, "success\n");
   c = '#';
   r = write(fd2, &c, 1);
   if(r!=1) fail("Failed to write to 1\n");
@@ -125,58 +119,58 @@ done:
   close(fd2);
 }
 
-// static void
-// concur(void)
-// {
-//   int pid, i;
-//   int fd;
-//   struct stat st;
-//   int nchild = 2;
+static void
+concur(void)
+{
+  int pid, i;
+  int fd;
+  struct stat st;
+  int nchild = 2;
 
-//   printf(1, "Start: test concurrent symlinks\n");
+  printf(1, "Start: test concurrent symlinks\n");
     
-//   fd = open("/testsymlink/z", O_CREATE | O_RDWR);
-//   if(fd < 0) {
-//     printf(1, "FAILED: open failed");
-//     exit();
-//   }
-//   close(fd);
+  fd = open("/testsymlink/z", O_CREATE | O_RDWR);
+  if(fd < 0) {
+    printf(1, "FAILED: open failed");
+    exit();
+  }
+  close(fd);
 
-//   for(int j = 0; j < nchild; j++) {
-//     pid = fork();
-//     if(pid < 0){
-//       printf(1, "FAILED: fork failed\n");
-//       exit();
-//     }
-//     if(pid == 0) {
-//       int m = 0;
-//       unsigned int x = (pid ? 1 : 97);
-//       for(i = 0; i < 100; i++){
-//         x = x * 1103515245 + 12345;
-//         if((x % 3) == 0) {
-//           symlink("/testsymlink/z", "/testsymlink/y");
-//           if (stat_slink("/testsymlink/y", &st) == 0) {
-//             m++;
-//             if(st.type != T_SYMLINK) {
-//               printf(1, "FAILED: not a symbolic link\n", st.type);
-//               exit();
-//             }
-//           }
-//         } else {
-//           unlink("/testsymlink/y");
-//         }
-//       }
-//       exit();
-//     }
-//   }
+  for(int j = 0; j < nchild; j++) {
+    pid = fork();
+    if(pid < 0){
+      printf(1, "FAILED: fork failed\n");
+      exit();
+    }
+    if(pid == 0) {
+      int m = 0;
+      unsigned int x = (pid ? 1 : 97);
+      for(i = 0; i < 100; i++){
+        x = x * 1103515245 + 12345;
+        if((x % 3) == 0) {
+          symlink("/testsymlink/z", "/testsymlink/y");
+          if (stat_slink("/testsymlink/y", &st) == 0) {
+            m++;
+            if(st.type != T_SYMLINK) {
+              printf(1, "FAILED: not a symbolic link\n", st.type);
+              exit();
+            }
+          }
+        } else {
+          unlink("/testsymlink/y");
+        }
+      }
+      exit();
+    }
+  }
 
-//   int r;
-//   for(int j = 0; j < nchild; j++) {
-//     r = wait();
-//     if(r != 0) {
-//       printf(1, "test concurrent symlinks: failed\n");
-//       exit();
-//     }
-//   }
-//   printf(1, "test concurrent symlinks: ok\n");
-// }
+  int r;
+  for(int j = 0; j < nchild; j++) {
+    r = wait();
+    if(r != 0) {
+      printf(1, "test concurrent symlinks: failed\n");
+      exit();
+    }
+  }
+  printf(1, "test concurrent symlinks: ok\n");
+}
