@@ -131,16 +131,21 @@ int
 sync(int option) 
 {
   int fpage = -1;
-  if (log.lh.n > 0 && !log.committing) {
+  if (log.lh.n > 0) {
     if (!option)
       acquire(&log.lock);
 
-    log.committing = 1;
-    
     while(log.outstanding > 0) {
       sleep(&log, &log.lock);
     }
 
+    if (log.committing) {
+      if (!option) 
+        release(&log.lock);
+      return -1;
+    }
+
+    log.committing = 1;
     fpage = log.lh.n;
     release(&log.lock);
 
