@@ -76,7 +76,7 @@ main(int argc, char *argv[])
         close(fd);
         break;
     default:
-        printf(1, "WRONG CMD");
+        printf(1, "WRONG CMD\n");
         break;
     }
     exit();
