@@ -619,7 +619,7 @@ createdelete(void)
       exit();
     }
   }
-
+  sync();
   for(pi = 0; pi < 4; pi++){
     wait();
   }
