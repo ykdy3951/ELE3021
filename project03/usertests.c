@@ -622,7 +622,6 @@ createdelete(void)
 
   for(pi = 0; pi < 4; pi++){
     wait();
-    printf(1, "found : aaaa\n");
   }
 
   name[0] = name[1] = name[2] = 0;
