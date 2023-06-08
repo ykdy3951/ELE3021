@@ -185,6 +185,8 @@ end_op(void)
   log.outstanding -= 1;
   if(log.outstanding < 0)
     panic("log.outstanding");
+  if(log.outstanding == 0)
+    wakeup(&log);
   release(&log.lock);
 }
 
