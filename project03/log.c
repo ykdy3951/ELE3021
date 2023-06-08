@@ -138,11 +138,6 @@ sync(int option)
     while(log.outstanding > 0) {
       sleep(&log, &log.lock);
     }
-
-    if(log.committing) {
-      cprintf("Why?\n");
-      return -1;
-    }
     
     log.committing = 1;
     fpage = log.lh.n;
