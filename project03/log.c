@@ -139,6 +139,11 @@ sync(int option)
       sleep(&log, &log.lock);
     }
     
+    if(log.committing) {
+      if (!option) release(&log.lock);
+      return -1;
+    }
+
     log.committing = 1;
     fpage = log.lh.n;
     release(&log.lock);
