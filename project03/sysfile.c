@@ -474,7 +474,7 @@ sys_pipe(void)
 int
 sys_sync(void)
 {
-  return sync();
+  return sync(0);
 }
 
 int

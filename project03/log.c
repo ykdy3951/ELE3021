@@ -128,11 +128,12 @@ get_log_num(void)
 }
 
 int 
-sync(void) 
+sync(int option) 
 {
   int fpage = -1;
   if (log.lh.n > 0) {
-    acquire(&log.lock);
+    if (!option)
+      acquire(&log.lock);
 
     log.committing = 1;
     while(log.outstanding > 0) {
@@ -148,7 +149,8 @@ sync(void)
     acquire(&log.lock);
     log.committing = 0;
     wakeup(&log);
-    release(&log.lock);
+    if(!option)
+      release(&log.lock);
   }
   return fpage;
 }
@@ -164,9 +166,7 @@ begin_op(void)
     } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE - 1){
       // this op might exhaust log space; wait for commit.
       // 공간이 부족하므로
-      release(&log.lock);
-      sync();
-      acquire(&log.lock);
+      sync(1);
       // sleep(&log, &log.lock);
     } else {
       log.outstanding += 1;
