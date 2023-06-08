@@ -49,7 +49,7 @@ struct log log;
 
 static void recover_from_log(void);
 static void commit();
-int g;
+
 void
 initlog(int dev)
 {
@@ -131,21 +131,16 @@ int
 sync(int option) 
 {
   int fpage = -1;
-  if (log.lh.n > 0) {
+  if (log.lh.n > 0 && !log.committing) {
     if (!option)
       acquire(&log.lock);
 
+    log.committing = 1;
+    
     while(log.outstanding > 0) {
       sleep(&log, &log.lock);
     }
-    
-    if(log.committing) {
-      while(log.committing) sleep(&log, &log.lock);
-      if (!option) release(&log.lock);
-      return -1;
-    }
 
-    log.committing = 1;
     fpage = log.lh.n;
     release(&log.lock);
 
@@ -172,7 +167,6 @@ begin_op(void)
     } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE - 1){
       // this op might exhaust log space; wait for commit.
       // 공간이 부족하므로
-      cprintf("%d\n", ++g);
       sync(1);
     } else {
       log.outstanding += 1;
