@@ -197,7 +197,8 @@ writetest1(void)
     exit();
   }
 
-  for(i = 0; i < MAXFILE; i++){
+  for(i = 0; i < T_NINDIRECT; i++){
+    if(i % 100 == 0) printf(1, "%d write\n", i);
     ((int*)buf)[0] = i;
     if(write(fd, buf, 512) != 512){
       printf(stdout, "error: write big file failed\n", i);
