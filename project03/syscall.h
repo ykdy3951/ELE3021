@@ -22,4 +22,4 @@
 #define SYS_close  21
 #define SYS_symlink 22
 #define SYS_sync   23
-#define SYS_get_log_num 24
+#define SYS_read_log 24

@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "memlayout.h": "c",
-        "limits": "cpp"
+        "limits": "cpp",
+        "new": "c"
     }
 }

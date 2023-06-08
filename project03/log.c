@@ -122,7 +122,7 @@ recover_from_log(void)
 }
 
 int
-get_log_num(void)
+read_log(void)
 {
   return log.lh.n;
 }

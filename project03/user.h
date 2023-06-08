@@ -25,7 +25,7 @@ int sleep(int);
 int uptime(void);
 int symlink(const char *, const char *);
 int sync(void);
-int get_log_num(void);
+int read_log(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

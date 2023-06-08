@@ -105,7 +105,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_symlink(void);
 extern int sys_sync(void);
-extern int sys_get_log_num(void);
+extern int sys_read_log(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -131,7 +131,7 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_symlink] sys_symlink,
 [SYS_sync]    sys_sync,
-[SYS_get_log_num] sys_get_log_num,
+[SYS_read_log] sys_read_log,
 };
 
 void

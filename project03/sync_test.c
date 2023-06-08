@@ -32,7 +32,7 @@ main(int argc, char *argv[])
         printf(1, "write returned %d : failed\n", r);
         exit();
       }
-      if ((log_num = get_log_num()) < 0) {
+      if ((log_num = read_log()) < 0) {
         printf(1, "get log num returned %d : failed\n", log_num);
         exit();
       } 
@@ -52,7 +52,7 @@ main(int argc, char *argv[])
     //     printf(1, "write returned %d : failed\n", r);
     //     exit();
     //   }
-    //   if ((old_log = get_log_num()) < 0) {
+    //   if ((old_log = read_log()) < 0) {
     //     printf(1, "get log num returned %d : failed\n", log_num);
     //     exit();
     //   } 
@@ -62,7 +62,7 @@ main(int argc, char *argv[])
     //     exit();
     //   }
 
-    //   if ((log_num = get_log_num()) < 0) {
+    //   if ((log_num = read_log()) < 0) {
     //     printf(1, "get log num returned %d : failed\n", log_num);
     //     exit();
     //   } 

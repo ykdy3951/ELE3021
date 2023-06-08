@@ -291,7 +291,7 @@ sys_open(void)
   int fd, omode;
   struct file *f;
   struct inode *ip;
-  int len;
+  int len, depth;
 
   if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
@@ -326,15 +326,11 @@ sys_open(void)
   }
 
   if (!(omode & O_NOFOLLOW)) {
-    while(ip->type == T_SYMLINK) {
+    depth = 0;
+    while(ip->type == T_SYMLINK && depth < 20) {
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
       dest[len] = '\0';
-
-      if((strlen(path) != strlen(dest)) || (!strncmp(path, dest, strlen(path)))) {
-        end_op();
-        return -1;
-      }
 
       iunlockput(ip);
       if((ip = namei(dest)) == 0){
@@ -347,6 +343,12 @@ sys_open(void)
         end_op();
         return -1;
       }
+      depth++;
+    }
+    if (depth >= 20) {
+      iunlockput(ip);
+      end_op();
+      return -1;
     }
   }
   iunlock(ip);
@@ -478,9 +480,9 @@ sys_sync(void)
 }
 
 int
-sys_get_log_num(void)
+sys_read_log(void)
 {
-  return get_log_num();
+  return read_log();
 }
 
 int
