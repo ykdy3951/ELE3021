@@ -606,7 +606,6 @@ createdelete(void)
           printf(1, "create failed\n");
           exit();
         }
-        sync();
         close(fd);
         if(i > 0 && (i % 2 ) == 0){
           name[1] = '0' + (i / 2);
@@ -619,7 +618,6 @@ createdelete(void)
       exit();
     }
   }
-  sync();
   for(pi = 0; pi < 4; pi++){
     wait();
   }
@@ -638,7 +636,6 @@ createdelete(void)
         exit();
       }
       if(fd >= 0) {
-        sync();
         close(fd);
       }
     }
