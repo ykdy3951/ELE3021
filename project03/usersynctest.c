@@ -69,7 +69,7 @@ main(int argc, char *argv[])
                 exit();
             }
             printf(1, "[Log Info] %d to %d\n", old_log_num, now_log_num);
-            printf("Flushed %d of blocks\n", ret_sync);
+            printf(1, "Flushed %d of blocks\n", ret_sync);
         }
         printf(1, "%d bytes written\n", BUF_PER_FILE * BUFFERSIZE);
         printf(1, "[Test 2] End sync i/o test\n");
