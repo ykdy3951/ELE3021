@@ -140,6 +140,11 @@ sync(int option)
       sleep(&log, &log.lock);
     }
 
+    if(log.committing) {
+      cprintf("Why?\n");
+      return -1;
+    }
+
     fpage = log.lh.n;
     release(&log.lock);
 
