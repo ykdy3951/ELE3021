@@ -135,7 +135,6 @@ sync(int option)
     if (!option)
       acquire(&log.lock);
 
-    log.committing = 1;
     while(log.outstanding > 0) {
       sleep(&log, &log.lock);
     }
@@ -144,7 +143,8 @@ sync(int option)
       cprintf("Why?\n");
       return -1;
     }
-
+    
+    log.committing = 1;
     fpage = log.lh.n;
     release(&log.lock);
 
