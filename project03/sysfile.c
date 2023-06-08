@@ -327,7 +327,7 @@ sys_open(void)
 
   if (!(omode & O_NOFOLLOW)) {
     index = 0;
-    while(ip->type == T_SYMLINK && index < 10) {
+    while(ip->type == T_SYMLINK && index < 15) {
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
       dest[len] = '\0';
@@ -345,7 +345,7 @@ sys_open(void)
       }
       index++;
     }
-    if (index >= 10) {
+    if (index >= 15) {
       iunlockput(ip);
       end_op();
       return -1;
@@ -495,6 +495,7 @@ sys_symlink(void)
     return -1;
 
   begin_op();
+  // 해당 new path를 
   if((ip = create(new, T_SYMLINK, 0, 0)) == 0){
     end_op();
     return -1;
