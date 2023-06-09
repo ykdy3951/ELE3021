@@ -37,7 +37,6 @@ filetest(char *path, int size)
   }
 
   for(i = 0; i < size; i++){
-    if(i % 100 == 0) printf(1, "%d write\n", i);
     ((int*)buf)[0] = i;
     if(write(fd, buf, 512) != 512){
       printf(stdout, "error: write big file failed\n", i);
