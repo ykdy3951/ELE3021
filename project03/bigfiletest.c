@@ -28,7 +28,7 @@ filetest(char *path, int size)
 {
   int i, fd, n;
 
-  printf(stdout, "big files %d MiB test\n", size / MiB);
+  printf(stdout, "Start %d MiB file test\n", size / MiB);
 
   fd = open(path, O_CREATE|O_RDWR);
   if(fd < 0){
@@ -38,6 +38,9 @@ filetest(char *path, int size)
 
   for(i = 0; i < size; i++){
     ((int*)buf)[0] = i;
+    if(i % MiB == 0) {
+        printf(stdout, "Write total %d MiB in file\n", i / MiB);
+    }
     if(write(fd, buf, 512) != 512){
       printf(stdout, "error: write big file failed\n", i);
       exit();
@@ -81,16 +84,36 @@ filetest(char *path, int size)
     printf(stdout, "unlink big failed\n");
     exit();
   }
-  printf(stdout, "big files size: %d bytes ok\n", size * 512);
+  printf(stdout, "End %d MiB file test\n", size / MiB);
+  printf(stdout, "file size: %d bytes ok\n", size * 512);
+}
+
+void help()
+{
+    printf(stdout, "-------------------- Test List --------------------\n");
+    printf(stdout, "- 0. 1 MiB file test                               \n");
+    printf(stdout, "- 1. 2 MiB file test                               \n");
+    printf(stdout, "- 2. 4 MiB file test                               \n");
+    printf(stdout, "- 3. 8 MiB file test                               \n");
+    printf(stdout, "- 4. 16 MiB file test                              \n");
+    printf(stdout, "- 5. 32 MiB file test                              \n");
+    printf(stdout, "- 6. 64 MiB file test                              \n");
+    printf(stdout, "- 7. 128 MiB file test                             \n");
+    printf(stdout, "---------------------------------------------------\n\n");
 }
 
 int main(int argc, char *argv[])
 {
     int n = 1, i;
+
+    help();
+
     for(i = 0; i < 8; i++, n *= 2) {
-        printf(stdout, "[Test %d] %dMiB file test\n", i, n);
+        printf(stdout, "[Test %d] %d MiB file test\n", i, n);
         filetest(name[i], n * MiB);
-        printf(stdout, "[Test %d] %dMiB file ok\n", i, n);
+        printf(stdout, "[Test %d] %d MiB file ok\n\n", i, n);
     }
+
+    printf(stdout, "All tests Passed\n");
     exit();
 }
