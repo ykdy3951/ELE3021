@@ -10,9 +10,9 @@
 
 const int MiB = 2048;
 int stdout = 1;
-char buf[8192];
+char buf[512];
 
-char name[8][15] = {
+char name[7][15] = {
     "1MiBfile",
     "2MiBfile",
     "4MiBfile",
@@ -20,7 +20,6 @@ char name[8][15] = {
     "16MiBfile",
     "32MiBfile",
     "64MiBfile",
-    "128MiBfile",
 };
 
 void
@@ -36,9 +35,12 @@ filetest(char *path, int size, int option)
     exit();
   }
 
+  for(i = 0; i < sizeof(buf); ++i) {
+    buf[i]=i%26+97;
+  }
+
   printf(stdout, "[Write start]\n");
   for(i = 0; i < size; i++){
-    ((int*)buf)[0] = i;
     if(i % MiB == 0) {
         printf(stdout, "Write total %d MiB in file\n", i / MiB);
     }
@@ -104,11 +106,10 @@ void help()
     printf(stdout, "- 4. 16 MiB file test                              \n");
     printf(stdout, "- 5. 32 MiB file test                              \n");
     printf(stdout, "- 6. 64 MiB file test                              \n");
-    printf(stdout, "- 7. 128 MiB file test                             \n");
     printf(stdout, "---------------------------------------------------\n\n");
 }
 
-int pow2[] = {1, 2, 4, 8, 16, 32, 64, 128};
+int pow2[] = {1, 2, 4, 8, 16, 32, 64};
 
 int main(int argc, char *argv[])
 {
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
 
     help();
 
-    for(i = 0; i < 4; i++, n *= 2) {
+    for(i = 0; i < 7; i++, n *= 2) {
         printf(stdout, "[Test %d] %d MiB file test\n", i, n);
         filetest(name[i], n * MiB, cmd);
         printf(stdout, "[Test %d] %d MiB file ok\n\n", i, n);
