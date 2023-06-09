@@ -8,7 +8,7 @@
 #include "traps.h"
 #include "memlayout.h"
 
-const int MiB = 1024 * 1024;
+const int MiB = 2048;
 int stdout = 1;
 char buf[8192];
 
