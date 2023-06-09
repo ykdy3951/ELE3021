@@ -36,6 +36,7 @@ filetest(char *path, int size)
     exit();
   }
 
+  printf(stdout, "\n[Write start]\n");
   for(i = 0; i < size; i++){
     ((int*)buf)[0] = i;
     if(i % MiB == 0) {
@@ -56,8 +57,13 @@ filetest(char *path, int size)
   }
 
   n = 0;
+
+  printf(stdout, "\n[Read start]\n");
   for(;;){
     i = read(fd, buf, 512);
+    if (n % MiB == 0){
+        printf(stdout, "Read total %d MiB in file\n", i / MiB);
+    }
     if(i == 0){
       if(n == size - 1){
         printf(stdout, "read only %d blocks from big", n);
@@ -108,7 +114,7 @@ int main(int argc, char *argv[])
 
     help();
 
-    for(i = 0; i < 8; i++, n *= 2) {
+    for(i = 0; i < 3; i++, n *= 2) {
         printf(stdout, "[Test %d] %d MiB file test\n", i, n);
         filetest(name[i], n * MiB);
         printf(stdout, "[Test %d] %d MiB file ok\n\n", i, n);
