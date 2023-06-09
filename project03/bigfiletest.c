@@ -24,7 +24,7 @@ char name[8][15] = {
 };
 
 void
-filetest(char *path, int size)
+filetest(char *path, int size, int option)
 {
   int i, fd, n;
 
@@ -32,18 +32,18 @@ filetest(char *path, int size)
 
   fd = open(path, O_CREATE|O_RDWR);
   if(fd < 0){
-    printf(stdout, "error: creat big failed!\n");
+    printf(stdout, "[Error] creat failed!\n");
     exit();
   }
 
-  printf(stdout, "\n[Write start]\n");
+  printf(stdout, "[Write start]\n");
   for(i = 0; i < size; i++){
     ((int*)buf)[0] = i;
     if(i % MiB == 0) {
         printf(stdout, "Write total %d MiB in file\n", i / MiB);
     }
     if(write(fd, buf, 512) != 512){
-      printf(stdout, "error: write big file failed\n", i);
+      printf(stdout, "[Error] write failed\n", i);
       exit();
     }
   }
@@ -52,13 +52,13 @@ filetest(char *path, int size)
 
   fd = open(path, O_RDONLY);
   if(fd < 0){
-    printf(stdout, "error: open big failed!\n");
+    printf(stdout, "[Error] open failed!\n");
     exit();
   }
 
   n = 0;
 
-  printf(stdout, "\n[Read start]\n");
+  printf(stdout, "[Read start]\n");
   for(;;){
     i = read(fd, buf, 512);
     if (n % MiB == 0){
@@ -71,7 +71,7 @@ filetest(char *path, int size)
       }
       break;
     } else if(i != 512){
-      printf(stdout, "read failed %d\n", i);
+      printf(stdout, "[Error] read failed %d\n", i);
       exit();
     }
     if(((int*)buf)[0] != n){
@@ -82,10 +82,14 @@ filetest(char *path, int size)
     n++;
   }
   if (sync() == -1) {
-    printf(stdout, "sync failed\n");
+    printf(stdout, "[Error] sync failed\n");
     exit();
   }
   close(fd);
+  if(option && unlink(path) < 0){
+    printf(stdout, "[Error] unlink failed\n");
+    exit();
+  }
   printf(stdout, "End %d MiB file test\n", size / MiB);
   printf(stdout, "file size: %d bytes ok\n", size * 512);
 }
@@ -104,15 +108,21 @@ void help()
     printf(stdout, "---------------------------------------------------\n\n");
 }
 
+int pow2[] = {1, 2, 4, 8, 16, 32, 64, 128};
+
 int main(int argc, char *argv[])
 {
     int n = 1, i;
+    int cmd = 0;
+    if (argc == 2) {
+        cmd = argv[1][0] - '0';
+    }
 
     help();
 
-    for(i = 0; i < 3; i++, n *= 2) {
+    for(i = 0; i < 4; i++, n *= 2) {
         printf(stdout, "[Test %d] %d MiB file test\n", i, n);
-        filetest(name[i], n * MiB);
+        filetest(name[i], n * MiB, cmd);
         printf(stdout, "[Test %d] %d MiB file ok\n\n", i, n);
     }
 
