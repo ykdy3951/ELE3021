@@ -81,7 +81,7 @@ filetest(char *path, int size)
     printf(stdout, "unlink big failed\n");
     exit();
   }
-  printf(stdout, "big files size: %d bytes ok\n", size);
+  printf(stdout, "big files size: %d bytes ok\n", size * 512);
 }
 
 int main(int argc, char *argv[])
