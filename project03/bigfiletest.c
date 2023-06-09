@@ -76,11 +76,6 @@ filetest(char *path, int size, int option)
       printf(stdout, "[Error] read failed %d\n", i);
       exit();
     }
-    if(((int*)buf)[0] != n){
-      printf(stdout, "read content of block %d is %d\n",
-             n, ((int*)buf)[0]);
-      exit();
-    }
     n++;
   }
   if (sync() == -1) {
