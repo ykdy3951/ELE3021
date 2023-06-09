@@ -1,176 +1,183 @@
 #include "param.h"
 #include "types.h"
 #include "stat.h"
-#include "fcntl.h"
-#include "spinlock.h"
-#include "sleeplock.h"
-#include "fs.h"
-#include "file.h"
 #include "user.h"
+#include "fcntl.h"
 
-#define fail(msg) do {printf(1, "FAILURE: " msg "\n"); failed = 1; goto done;} while (0);
-static int failed = 0;
+#define BUFSIZE 100
+#define TESTCNT 3
 
-static void testsymlink(void);
-static void concur(void);
-static void cleanup(void);
+int symlinktest1();
+int symlinktest2();
+int symlinktest3();
 
-int
-main(int argc, char *argv[])
+int stdout = 1;
+char buf[BUFSIZE];
+char buf_link[BUFSIZE];
+
+char *test_name_list[TESTCNT] = {
+    "Simple Symlink",
+    "Linked Symlink",
+    "Miss Symlink"};
+
+int (*test_list[TESTCNT])(void) = {
+    symlinktest1,
+    symlinktest2,
+    symlinktest3};
+
+int symlinktest1()
 {
-  cleanup();
-  testsymlink();
-  concur();
-  exit();
-}
+    int fd;
 
-static void
-cleanup(void)
-{
-  unlink("/testsymlink/a");
-  unlink("/testsymlink/b");
-  unlink("/testsymlink/c");
-  unlink("/testsymlink/1");
-  unlink("/testsymlink/2");
-  unlink("/testsymlink/3");
-  unlink("/testsymlink/4");
-  unlink("/testsymlink/z");
-  unlink("/testsymlink/y");
-  unlink("/testsymlink");
-}
+    fd = open("symlinkdummy", O_CREATE | O_RDWR);
 
-// stat a symbolic link using O_NOFOLLOW
-static int
-stat_slink(char *pn, struct stat *st)
-{
-  int fd = open(pn, O_RDONLY | O_NOFOLLOW);
-  if(fd < 0)
-    return -1;
-  if(fstat(fd, st) != 0)
-    return -1;
-  return 0;
-}
-
-static void
-testsymlink(void)
-{
-  int r, fd1 = -1, fd2 = -1;
-  char buf[4] = {'a', 'b', 'c', 'd'};
-  char c = 0, c2 = 0;
-  struct stat st;
-    
-  printf(1, "Start: test symlinks\n");
-
-  mkdir("/testsymlink");
-
-  fd1 = open("/testsymlink/a", O_CREATE | O_RDWR);
-  if(fd1 < 0) fail("failed to open a");
-  r = symlink("/testsymlink/a", "/testsymlink/b");
-  if(r < 0)
-    fail("symlink b -> a failed");
-  if(write(fd1, buf, sizeof(buf)) != 4)
-    fail("failed to write to a");
-  if (stat_slink("/testsymlink/b", &st) != 0)
-    fail("failed to stat b");
-  if(st.type != T_SYMLINK)
-    fail("b isn't a symlink");
-  fd2 = open("/testsymlink/b", O_RDWR);
-  if(fd2 < 0)
-    fail("failed to open b");
-  read(fd2, &c, 1);
-  if (c != 'a')
-    fail("failed to read bytes from b");
-  unlink("/testsymlink/a");
-  if(open("/testsymlink/b", O_RDWR) >= 0)
-    fail("Should not be able to open b after deleting a");
-  r = symlink("/testsymlink/b", "/testsymlink/a");
-  if(r < 0)
-    fail("symlink a -> b failed");
-  r = open("/testsymlink/b", O_RDWR);
-  if(r >= 0)
-    fail("Should not be able to open b (cycle b->a->b->..)\n");
-  r = symlink("/testsymlink/nonexistent", "/testsymlink/c");
-  if(r != 0)
-    fail("Symlinking to nonexistent file should succeed\n");
-  r = symlink("/testsymlink/2", "/testsymlink/1");
-  if(r) fail("Failed to link 1->2");
-  r = symlink("/testsymlink/3", "/testsymlink/2");
-  if(r) fail("Failed to link 2->3");
-  r = symlink("/testsymlink/4", "/testsymlink/3");
-  if(r) fail("Failed to link 3->4");
-  close(fd1);
-  close(fd2);
-
-  fd1 = open("/testsymlink/4", O_CREATE | O_RDWR);
-  if(fd1<0) fail("Failed to create 4\n");
-  fd2 = open("/testsymlink/1", O_RDWR);
-  if(fd2<0) fail("Failed to open 1\n");
-  c = '#';
-  r = write(fd2, &c, 1);
-  if(r!=1) fail("Failed to write to 1\n");
-  r = read(fd1, &c2, 1);
-  if(r!=1) fail("Failed to read from 4\n");
-  if(c!=c2)
-    fail("Value read from 4 differed from value written to 1\n");
-  printf(1, "success\n");
-  printf(1, "test symlinks: ok\n");
-done:
-  close(fd1);
-  close(fd2);
-}
-
-static void
-concur(void)
-{
-  int pid, i;
-  int fd;
-  struct stat st;
-  int nchild = 2;
-
-  printf(1, "Start: test concurrent symlinks\n");
-    
-  fd = open("/testsymlink/z", O_CREATE | O_RDWR);
-  if(fd < 0) {
-    printf(1, "FAILED: open failed");
-    exit();
-  }
-  close(fd);
-
-  for(int j = 0; j < nchild; j++) {
-    pid = fork();
-    if(pid < 0){
-      printf(1, "FAILED: fork failed\n");
-      exit();
+    if (fd < 0)
+    {
+        printf(stdout, "error: create file for symbolic link failed!\n");
+        exit();
     }
-    if(pid == 0) {
-      int m = 0;
-      unsigned int x = (pid ? 1 : 97);
-      for(i = 0; i < 100; i++){
-        x = x * 1103515245 + 12345;
-        if((x % 3) == 0) {
-          symlink("/testsymlink/z", "/testsymlink/y");
-          if (stat_slink("/testsymlink/y", &st) == 0) {
-            m++;
-            if(st.type != T_SYMLINK) {
-              printf(1, "FAILED: not a symbolic link\n", st.type);
-              exit();
-            }
-          }
-        } else {
-          unlink("/testsymlink/y");
+
+    strcpy(buf, "Symbolic Test Running...");
+
+    if (write(fd, buf, 512) != 512)
+    {
+        printf(stdout, "error: write file for symbolic link failed\n");
+        exit();
+    }
+
+    sync();
+    close(fd);
+
+    symlink("symlinkdummy", "linksymlinkdummy");
+
+    fd = open("linksymlinkdummy", O_RDONLY);
+
+    read(fd, buf_link, sizeof(buf_link));
+
+    close(fd);
+
+    if (strcmp(buf, buf_link))
+    {
+        printf(2, "Test Fail...!\n[Original]: %s\n[Symbolic]: %s\n", buf, buf_link);
+        return -1;
+    }
+
+    printf(2, "  [Test Result]\n  Original: %s\n  Symbolic: %s\n", buf, buf_link);
+
+    unlink("symlinkdummy");
+    unlink("linksymlinkdummy");
+
+    return 0;
+}
+
+int symlinktest2()
+{
+    int fd;
+    char *file_name_list[5] = {
+        "test1",
+        "test2",
+        "test3",
+        "test4",
+        "test5",
+    };
+
+    fd = open(file_name_list[0], O_CREATE | O_RDWR);
+
+    if (fd < 0)
+    {
+        printf(stdout, "error: create file for symbolic link failed!\n");
+        exit();
+    }
+
+    strcpy(buf, "Symbolic Recursive Test Success!!");
+
+    if (write(fd, buf, 512) != 512)
+    {
+        printf(stdout, "error: write file for symbolic link failed\n");
+        exit();
+    }
+
+    sync();
+    read(fd, buf_link, sizeof(buf_link));
+    close(fd);
+
+    for (int i = 1; i < 5; ++i)
+    {
+        symlink(file_name_list[i - 1], file_name_list[i]);
+    }
+
+    fd = open(file_name_list[1], O_RDONLY);
+
+    read(fd, buf_link, sizeof(buf_link));
+
+    printf(2, "%s\n", buf_link);
+
+    close(fd);
+
+    if (strcmp(buf, buf_link))
+    {
+        printf(2, "Test Fail : [Original]: %s, \n[Symbolic]: %s\n", buf, buf_link);
+        return -1;
+    }
+    printf(2, "  [Test Result]\n    Original: %s\n    Symbolic: %s\n", buf, buf_link);
+
+    for (int i = 0; i < 5; ++i)
+    {
+        unlink(file_name_list[i]);
+    }
+    return 0;
+}
+
+int symlinktest3()
+{
+    int fd;
+
+    fd = open("missfile", O_CREATE | O_RDWR);
+
+    if (fd < 0)
+    {
+        printf(stdout, "error: create file for symbolic link failed!\n");
+        exit();
+    }
+
+    strcpy(buf, "Symbolic Missing Test Running...");
+
+    if (write(fd, buf, 512) != 512)
+    {
+        printf(stdout, "error: write file for symbolic link failed\n");
+        exit();
+    }
+
+    sync();
+    close(fd);
+
+    symlink("missfile", "linkfile");
+    unlink("missfile");
+    fd = open("linkfile", O_RDONLY);
+    if (fd < 0)
+    {
+        unlink("linkfile");
+        printf(2, "  [Test Result]\n    Reference file is missed.\n", buf, buf_link);
+        return 0;
+    }
+
+    return -1;
+}
+
+int main(int argc, char *argv[])
+{
+    printf(stdout, "soft symbolic test\n\n");
+
+    for (int i = 0; i < TESTCNT; ++i)
+    {
+        printf(2, "[%s] Start\n", test_name_list[i]);
+        if (test_list[i]() != 0)
+        {
+            printf(2, "%s failed\n", test_name_list[i]);
+            exit();
         }
-      }
-      exit();
+        printf(2, "[%s] Finish\n\n", test_name_list[i]);
     }
-  }
 
-  int r;
-  for(int j = 0; j < nchild; j++) {
-    r = wait();
-    if(r != 0) {
-      printf(1, "test concurrent symlinks: failed\n");
-      exit();
-    }
-  }
-  printf(1, "test concurrent symlinks: ok\n");
+    exit();
 }
