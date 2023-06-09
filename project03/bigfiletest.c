@@ -10,7 +10,7 @@
 
 const int MiB = 2048;
 int stdout = 1;
-char buf[512];
+char buf[515];
 
 char name[7][15] = {
     "1MiBfile",
