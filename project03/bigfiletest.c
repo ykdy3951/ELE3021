@@ -62,7 +62,7 @@ filetest(char *path, int size)
   for(;;){
     i = read(fd, buf, 512);
     if (n % MiB == 0){
-        printf(stdout, "Read total %d MiB in file\n", i / MiB);
+        printf(stdout, "Read total %d MiB in file\n", n / MiB);
     }
     if(i == 0){
       if(n == size - 1){
