@@ -49,7 +49,7 @@ filetest(char *path, int size, int option)
       exit();
     }
   }
-
+  printf(stdout, "Write total %d MiB in file\n", size / MiB);
   close(fd);
 
   fd = open(path, O_RDONLY);
