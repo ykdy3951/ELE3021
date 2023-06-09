@@ -86,10 +86,6 @@ filetest(char *path, int size)
     exit();
   }
   close(fd);
-  if(unlink(path) < 0){
-    printf(stdout, "unlink big failed\n");
-    exit();
-  }
   printf(stdout, "End %d MiB file test\n", size / MiB);
   printf(stdout, "file size: %d bytes ok\n", size * 512);
 }
