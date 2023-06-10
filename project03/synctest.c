@@ -50,12 +50,11 @@ int
 main(int argc, char *argv[])
 {
     char cmd = argv[1][0];
-    int fd, i, cnt, ret_sync, old_log_num, now_log_num;
+    int i;
 
     for(i = 0; i < sizeof(data); ++i) {
         data[i]=i%26+97;
     }
-    old_log_num = -1;
 
     printf(stdout, "Sync Test\n");
     switch (cmd)
