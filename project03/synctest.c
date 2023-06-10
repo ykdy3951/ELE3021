@@ -21,7 +21,7 @@ synctest(char *path, int option)
 
     for(i = 0; i < BUF_PER_FILE; i++) {
         if (i % 100 == 0) {
-            printf(stdout, "[File %d] %d bytes written\n", i * BUFFERSIZE);
+            printf(stdout, "[File %d] %d bytes written\n", fd, i * BUFFERSIZE);
         }
         if ((cnt = write(fd, data, sizeof(data))) != sizeof(data)) {
             printf(stdout, "[Write Error] Write returned %d\n", cnt);
