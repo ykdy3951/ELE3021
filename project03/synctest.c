@@ -40,7 +40,9 @@ synctest(char *path, int option)
             exit();
         }
         printf(stdout, "[Log Info] %d to %d\n", old_log_num, now_log_num);
-        printf(stdout, "Flushed %d of blocks\n", ret_sync);
+
+        if (option)
+            printf(stdout, "Flushed %d of blocks\n", ret_sync);
     }
     printf(stdout, "%d bytes written\n", BUF_PER_FILE * BUFFERSIZE);
     close(fd);
