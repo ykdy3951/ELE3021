@@ -127,11 +127,18 @@ read_log(void)
   return log.lh.n;
 }
 
+// To-Do : Sync for buffered I/O
+// Sync function
+// option is used to determine caller
+// option is 1, caller is begin_op (already locked)
+// option is 0, sync holds the lock of log properly.
 int 
 sync(int option) 
 {
   int fpage = -1;
+
   if (log.lh.n > 0) {
+    // [option 0] acquire log lock
     if (!option)
       acquire(&log.lock);
 
@@ -139,14 +146,19 @@ sync(int option)
       sleep(&log, &log.lock);
     }
 
+    // If log is committing, Return -1
     if (log.committing) {
+      // [option 0] release log lock 
       if (!option) 
         release(&log.lock);
       return -1;
     }
 
+    // Committing start and Set return value log.lh.n
     log.committing = 1;
     fpage = log.lh.n;
+
+    // Before call commit function, release log lock.
     release(&log.lock);
 
     // commit & set 0 committing var 
@@ -155,6 +167,7 @@ sync(int option)
     acquire(&log.lock);
     log.committing = 0;
     wakeup(&log);
+    // [option 0] release log lock
     if(!option)
       release(&log.lock);
   }
@@ -171,7 +184,6 @@ begin_op(void)
       sleep(&log, &log.lock);
     } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE - 1){
       // this op might exhaust log space; wait for commit.
-      // 공간이 부족하므로
       sync(1);
     } else {
       log.outstanding += 1;
@@ -190,6 +202,8 @@ end_op(void)
   log.outstanding -= 1;
   if(log.outstanding < 0)
     panic("log.outstanding");
+
+  // If oustanding of log is 0, wake up the log.
   if(log.outstanding == 0)
     wakeup(&log);
   release(&log.lock);
