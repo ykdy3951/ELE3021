@@ -397,11 +397,17 @@ bmap(struct inode *ip, uint bn)
   }
   bn -= NINDIRECT;
 
+  // TO-DO : Multi Indirect
+  // Implement double and triple indirect block
+
+  // double indirect block (MAX FILE SIZE OF DOUBLE INDIRECT : 8MiB)
+  // Implement double indirect
   if(bn < D_NINDIRECT){
     // Load indirect block, allocating if necessary.
     if((addr = ip->addrs[NDIRECT+1]) == 0)
       ip->addrs[NDIRECT+1] = addr = balloc(ip->dev);
     
+    // single indirect
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[bn / NINDIRECT]) == 0){
@@ -410,6 +416,7 @@ bmap(struct inode *ip, uint bn)
     }
     brelse(bp);
 
+    // double indirect
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[bn % NINDIRECT]) == 0){
@@ -417,15 +424,20 @@ bmap(struct inode *ip, uint bn)
       log_write(bp);
     }
     brelse(bp);
+
+    // return data addr
     return addr;
   }
   bn -= D_NINDIRECT;
   
+  // triple indirect block (MAX FILE SIZE OF TRIPLE INDIRECT : 1GiB)
+  // Implement triple indirect
   if(bn < T_NINDIRECT){
     // Load indirect block, allocating if necessary.
     if((addr = ip->addrs[NDIRECT+2]) == 0)
       ip->addrs[NDIRECT+2] = addr = balloc(ip->dev);
     
+    // sigle indirect
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[bn / D_NINDIRECT]) == 0){
@@ -434,6 +446,7 @@ bmap(struct inode *ip, uint bn)
     }
     brelse(bp);
 
+    // double indirect
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[(bn % D_NINDIRECT) / NINDIRECT]) == 0){
@@ -442,6 +455,7 @@ bmap(struct inode *ip, uint bn)
     }
     brelse(bp);
 
+    // triple indirect
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[(bn % D_NINDIRECT) % NINDIRECT]) == 0){
@@ -467,6 +481,7 @@ itrunc(struct inode *ip)
   struct buf *bp, *bp2, *bp3;
   uint *a, *a2, *a3;
 
+  // Direct
   for(i = 0; i < NDIRECT; i++){
     if(ip->addrs[i]){
       bfree(ip->dev, ip->addrs[i]);
@@ -474,6 +489,8 @@ itrunc(struct inode *ip)
     }
   }
 
+  // Single Indirect
+  // Find allocated blocks and Free allocated blocks
   if(ip->addrs[NDIRECT]){
     bp = bread(ip->dev, ip->addrs[NDIRECT]);
     a = (uint*)bp->data;
@@ -486,17 +503,26 @@ itrunc(struct inode *ip)
     ip->addrs[NDIRECT] = 0;
   }
 
+  // TO-DO : Multi Indirect
+  // Implement double and triple indirect block
+
+  // Double indirect
+  // Find allocated blocks recursive and Free all of allocated blocks
   if(ip->addrs[NDIRECT+1]){
     bp = bread(ip->dev, ip->addrs[NDIRECT+1]);
     a = (uint*)bp->data;
     for(i = 0; i < NINDIRECT; i++){
+      // Check whether this block is allocated
       if (a[i]) {
         bp2 = bread(ip->dev, a[i]);
         a2 = (uint*)bp2->data;
+        // free 2-depth blocks
         for(j = 0; j < NINDIRECT; j++){
+          // Check whether this block is allocated
           if(a2[j])
             bfree(ip->dev, a2[j]);
         }
+        // free 1-depth blocks
         brelse(bp2);
         bfree(ip->dev, a[i]);
         a[i] = 0;
@@ -507,26 +533,34 @@ itrunc(struct inode *ip)
     ip->addrs[NDIRECT+1] = 0;
   }
 
+  // Triple Indirect
+  // Find allocated blocks recursive and Free all of allocated blocks
   if(ip->addrs[NDIRECT+2]){
     bp = bread(ip->dev, ip->addrs[NDIRECT+2]);
     a = (uint*)bp->data;
     for(i = 0; i < NINDIRECT; i++){
+      // Check whether this block is allocated
       if (a[i]) {
         bp2 = bread(ip->dev, a[i]);
         a2 = (uint*)bp2->data;
         for(j = 0; j < NINDIRECT; j++){
+          // Check whether this block is allocated
           if(a2[j]){
             bp3 = bread(ip->dev, a2[j]);
             a3 = (uint*)bp3->data;
+            // free 3-depth blocks
             for(k = 0; k < NINDIRECT; k++){
+              // Check whether this block is allocated
               if(a3[k])
                 bfree(ip->dev, a3[k]);
             }
+            // free 2-depth blocks
             brelse(bp3);
             bfree(ip->dev, a2[j]);
             a2[j] = 0;
           }
         }
+        // free 1-depth blocks
         brelse(bp2);
         bfree(ip->dev, a[i]);
         a[i] = 0;
