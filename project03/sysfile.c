@@ -325,13 +325,23 @@ sys_open(void)
     return -1;
   }
 
+  // To-Do : Symbolic link file open
   if (!(omode & O_NOFOLLOW)) {
+
+    // Variable named depth : check the cycle between the symlink files
+    // If depth is greater than or equal to 20, It is determined that there is a cycle between symbolic link files.
     depth = 0;
     while(ip->type == T_SYMLINK && depth < 20) {
+      // symbolic link file
+
+      // Load length of file name and file name.
       readi(ip, (char *)&len, 0, sizeof(len));
       readi(ip, dest, sizeof(len), len+1);
+      
+      // Insert '\0' value to represent the end of the string.
       dest[len] = '\0';
 
+      // Using namei function, load new ip 
       iunlockput(ip);
       if((ip = namei(dest)) == 0){
         end_op();
@@ -345,6 +355,7 @@ sys_open(void)
       }
       depth++;
     }
+    // Probably a cycle between symlink files
     if (depth >= 20) {
       iunlockput(ip);
       end_op();
@@ -473,36 +484,53 @@ sys_pipe(void)
   return 0;
 }
 
+// Wrapper Function of Sync system call
 int
 sys_sync(void)
 {
+  // The argument of sync function is used to hold the lock of log.
+  // If value of argument is 0, Hold the lock of log.
+  // Else If value of argument is 1, Do not have to hold the lock of log.
   return sync(0);
 }
 
+// This system call is made for test code.
 int
 sys_read_log(void)
 {
   return read_log();
 }
 
+// system call : symlink (symbolic link)
+// this system call 
+// in qemu, you can use this system call "ln -s old new"
 int
 sys_symlink(void)
 {
+  // local variable in system call
   char *new, *old;
   struct inode *ip;
   int len;
+
+  // Use argstr, fetch the parameter of symlink
   if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
     return -1;
 
   begin_op();
-  // 해당 new path를 
+  // Make symlink type file named new (or pathname new)
   if((ip = create(new, T_SYMLINK, 0, 0)) == 0){
     end_op();
     return -1;
   }
 
+  // Put the length and name of the old file in the ip of the new file 
   len = strlen(old);
+  
+  // First, Put the length of the file named old.
+  // This information is used to get the file named old exactly.
   writei(ip, (char *)&len, 0, sizeof(len));
+
+  // Then, Put the name (path) of the file.
   writei(ip, old, sizeof(len), len + 1);
   iunlockput(ip);
   end_op();
