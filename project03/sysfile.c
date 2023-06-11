@@ -298,6 +298,9 @@ sys_open(void)
 
   begin_op();
 
+
+  cprintf("%d %d\n", omode, !(omode & O_NOFOLLOW));
+
   if(omode & O_CREATE){
     ip = create(path, T_FILE, 0, 0);
     if(ip == 0){
