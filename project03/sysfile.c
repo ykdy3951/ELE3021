@@ -253,7 +253,7 @@ create(char *path, short type, short major, short minor)
     ilock(ip);
     if(type == T_FILE && ip->type == T_FILE)
       return ip;
-    if(type == T_SYMLINK)
+    if(type == T_SYMLINK && ip->type == T_SYMLINK)
       return ip;
     iunlockput(ip);
     return 0;
