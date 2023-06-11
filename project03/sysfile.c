@@ -310,7 +310,7 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
-    if(ip->type == T_DIR && (omode != O_NOFOLLOW || omode != O_RDONLY)){
+    if(ip->type == T_DIR && (omode != O_NOFOLLOW && omode != O_RDONLY)){
       iunlockput(ip);
       end_op();
       return -1;
