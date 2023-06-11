@@ -74,7 +74,7 @@ stat(const char *n, struct stat *st)
   int r;
 
   // TO-DO : solve ls command for symlinkfile 
-  fd = open(n, 0);
+  fd = open(n, O_NOFOLLOW);
   if(fd < 0)
     return -1;
   r = fstat(fd, st);
