@@ -324,10 +324,9 @@ sys_open(void)
     end_op();
     return -1;
   }
-
+  cprintf("%d %d\n", omode, !(omode & O_NOFOLLOW));
   // To-Do : Symbolic link file open
-  if ((omode ^ O_NOFOLLOW)) {
-    cprintf("123\n");
+  if (!(omode & O_NOFOLLOW)) {
     // Variable named depth : check the cycle between the symlink files
     // If depth is greater than or equal to 20, It is determined that there is a cycle between symbolic link files.
     depth = 0;
