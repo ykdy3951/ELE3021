@@ -297,10 +297,7 @@ sys_open(void)
     return -1;
 
   begin_op();
-
-
-  cprintf("%d %d\n", omode, !(omode & O_NOFOLLOW));
-
+  
   if(omode & O_CREATE){
     ip = create(path, T_FILE, 0, 0);
     if(ip == 0){
@@ -313,7 +310,7 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
-    if(ip->type == T_DIR && (omode != O_RDONLY && omode != O_NOFOLLOW)){
+    if(ip->type == T_DIR && omode != O_RDONLY){
       iunlockput(ip);
       end_op();
       return -1;
@@ -327,7 +324,6 @@ sys_open(void)
     end_op();
     return -1;
   }
-  cprintf("%d %d\n", omode, !(omode & O_NOFOLLOW));
   // To-Do : Symbolic link file open
   if (!(omode & O_NOFOLLOW)) {
     // Variable named depth : check the cycle between the symlink files
