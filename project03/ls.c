@@ -2,6 +2,7 @@
 #include "stat.h"
 #include "user.h"
 #include "fs.h"
+#include "fcntl.h"
 
 char*
 fmtname(char *path)
@@ -31,7 +32,7 @@ ls(char *path)
   struct stat st;
 
   // TO-DO : print symlink file
-  if((fd = open(path, 0x400)) < 0){
+  if((fd = open(path, O_NOFOLLOW)) < 0){
     printf(2, "ls: cannot open %s\n", path);
     return;
   }
