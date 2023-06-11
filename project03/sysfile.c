@@ -310,6 +310,7 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
+    // solve ls command for symlink file
     if(ip->type == T_DIR && (omode != O_RDONLY && omode != O_NOFOLLOW)){
       iunlockput(ip);
       end_op();
