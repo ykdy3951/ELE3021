@@ -183,7 +183,7 @@ begin_op(void)
     if(log.committing){
       sleep(&log, &log.lock);
     } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE - 1){
-      // this op might exhaust log space; wait for commit.
+      // If buffer is full, then sync
       sync(1);
     } else {
       log.outstanding += 1;
