@@ -29,7 +29,7 @@ ls(char *path)
   int fd;
   struct dirent de;
   struct stat st;
-  printf(2, "123\n");
+
   // TO-DO : print symlink file
   if((fd = open(path, 0)) < 0){
     printf(2, "ls: cannot open %s\n", path);
