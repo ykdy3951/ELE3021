@@ -355,7 +355,7 @@ sys_open(void)
       depth++;
     }
     // Probably a cycle between symlink files
-    if (depth >= 20) {
+    if (ip->type == T_SYMLINK && depth >= 20) {
       iunlockput(ip);
       end_op();
       return -1;
